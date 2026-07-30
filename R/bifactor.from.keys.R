@@ -3,11 +3,6 @@
 #' `bifactor.from.keys` runs a series of bifactor model from three keys lists---
 #' one for items on general factor; one for items on group factors;
 #' and one for group factors on general factors.
-#' The keys list must be named appropriately
-#' (i.e., general factor names, group factor names, and general factor names
-#' for the three lists respectively).
-#' The function is designed to streamline running measurement models for all
-#' scales in a sample and to input model outputs into downstream functions.
 #'
 #' @inheritParams sem.check
 #' @param keys_g
@@ -34,7 +29,7 @@
 #' `save_out = TRUE` and checked against when `check = TRUE`.
 #' Defaults to 'bifactor'.
 #' Irrelevant if both `save_out = FALSE` and `check = FALSE`.
-#' The name should be unique for each set of models or outputs from calls with
+#' The name should be unique for each set of models, or outputs from calls with
 #' the same name will be overwritten.
 #' @param std.lv
 #' Logical.
@@ -52,6 +47,12 @@
 #' and, if `fit_save = TRUE`, a matrix of fit measures for each model.
 #'
 #' @details
+#' The function is designed to streamline running measurement models for all
+#' scales in a sample and to input model outputs into downstream functions.
+#' Keys list must be named appropriately;
+#' that is, `keys_g` and `keys_b` names must be the general factor names,
+#' and `keys` must be the group factor names.
+#'
 #' The model relies on [sem.check()] for the back-end of running the models.
 #' This enables saving inputs and outputs from model runs
 #' (with `save_out = TRUE`) and checking to see if anything has changed from
@@ -139,19 +140,19 @@ bifactor.from.keys <- function(
   name = "bifactor", check = FALSE, save_out = FALSE
 ) {
   if (!is.list(keys_g)) {
-    stop("`keys_g` is not a list.")
+    stop("'keys_g' is not a list.")
   }
   if (!is.list(keys_b)) {
-    stop("`keys_b` is not a list.")
+    stop("'keys_b' is not a list.")
   }
   if (!is.list(keys)) {
-    stop("`keys` is not a list.")
+    stop("'keys' is not a list.")
   }
   if (length(keys_g) != length(keys_b)) {
     stop(
       paste(
-        "`keys_g` is not the same length as `keys_b`.",
-        "Check that you have not mixed up `keys` with `keys_g` or `keys_b`,",
+        "'keys_g' is not the same length as 'keys_b'.",
+        "Check that you have not mixed up 'keys' with 'keys_g' or 'keys_b',",
         "or otherwise misspecified one of these keys lists."
       )
     )
@@ -159,9 +160,9 @@ bifactor.from.keys <- function(
   if (sum(names(keys_g) != names(keys_b)) > 0) {
     stop(
       paste(
-        "Names of `keys_g` do not match names of `keys_b`.",
+        "Names of 'keys_g' do not match names of 'keys_b'.",
         "Check keys are correctly specified and that they have not been mixed",
-        "up with `keys`."
+        "up with 'keys'."
       )
     )
   }
@@ -172,7 +173,7 @@ bifactor.from.keys <- function(
         grps <- x[!x %in% names(keys)]
         stop(
           paste0(
-            "The following group factor(s) in `keys_b` are not in `keys`:",
+            "The following group factor(s) in 'keys_b' are not in 'keys':",
             "\n    ",
             paste(grps, collapse = "\n    "),
             "\n\nIf these are items, not group factors, ",
@@ -193,11 +194,11 @@ bifactor.from.keys <- function(
             if (sum(!keys[[z]] %in% x) == length(keys[[z]])) {
               stop(
                 paste0(
-                  "All the items in the `",
+                  "All the items in the '",
                   z,
-                  "` group factor are not in the `",
+                  "' group factor are not in the '",
                   xn,
-                  "` general factor."
+                  "' general factor."
                 )
               )
             }

@@ -1,9 +1,13 @@
 #' Runs lavaan models after checking for code or data changes.
 #'
 #' @description
-#' sem.check produces outputs from a series of lavaan models. For each model,
-#' the code checks for previously saved model code, a hash of data, and
-#' important parameter inputs.
+#' sem.check takes a model list, keys lists, and data, and
+#' produces outputs from a series of lavaan models.
+#' The function is primarily used as a function to be called by other function
+#' within the package but it can also be run independently.
+#'
+#' For each model, the code optionally checks for previously saved model code,
+#' a hash of data, and important parameter inputs.
 #' If they exist and match values for the current code and data,
 #' the model is not run, the previous output is loaded instead.
 #' If either the code has changed, the hash of the data has changed, or
@@ -43,7 +47,7 @@
 #' A string indicating a subdirectory where model outputs will be saved when
 #' `save_out = TRUE` and checked against when `check = TRUE`.
 #' Defaults to "sem".
-#' The name should be unique for each set of models or outputs from calls with
+#' The name should be unique for each set of models, or outputs from calls with
 #' the same name will be overwritten.
 #' @param orthogonal
 #' Logical.
@@ -104,17 +108,19 @@
 #'
 #' Matching the philosophy of the package, the function is designed to run for
 #' multiple models with a similar design. If you are using the function for a
-#' single model, transform inputs into lists as appropriate.
+#' single model, transform inputs into lists as appropriate or simply use lavaan
+#' without the assistance of semFromKeys.
 #'
-#' When `save_out = TRUE`, if a cache directory has been set,
-#' the model will save various inputs and outputs from the function call.
-#' When `check = TRUE`,
-#' the model will look for any previously saved outputs from earlier model runs
-#' in the same cache directory and only run again if nothing has changed.
-#' In cases where something has changed for a subset of models
-#' (e.g., a data cleaning mistake might affect only a subset of variables in a
-#' subset of models), then the function will only re-run the models where
-#' something has changed.
+#' The function includes functionality designed to save time re-running code
+#' when lots of slow models are included.
+#' To do this, when `save_out = TRUE` and a cache directory has been set,
+#' the model will save various inputs and outputs from the function call, and,
+#' when `check = TRUE`, the model will look for any previously saved outputs
+#' from earlier model runs in the same cache directory and
+#' only run again if nothing has changed.
+#' In cases where something has changed,
+#' then the function will re-run the models where something has changed
+#' (but it will not for those where nothing has changed).
 #' Changes to arguments that influence all lavaan model runs (e.g., miss or est)
 #' will trigger all models to be re-run.
 #'
@@ -123,22 +129,20 @@
 #' [cache.setup()] function.
 #' If a cache directory has not been set for the current session,
 #' then the function will exit with an error suggesting that either
-#' [cache.setup()] be run or `save_out` and `check` set to FALSE.
+#' [cache.setup()] be run or `save_out` and `check` set to `FALSE`.
 #'
 #' When the cache directory is found and output from previous runs are detected,
 #' the comparisons performed are for:
-#' model code;
-#' hashes of the data (using [openssl::md5()]);
-#' values of the `miss`, `est`, `std`, `std.lv`, and `orthogonal`parameters;
-#' the class of model objects (i.e., class lavaan);
-#' and the class of parameter estimates (i.e., class lavaan.data.frame).
+#' * model code;
+#' * hashes of the data (using [openssl::md5()]);
+#' * values of the `miss`, `est`, `std`, `std.lv`, and `orthogonal`parameters;
+#' * the class of model objects (i.e., class lavaan); and,
+#' * the class of parameter estimates (i.e., class lavaan.data.frame).
 #'
 #' For most applications, the checking feature can be safely ignored by not
 #' saving outputs (i.e., `fit_save = FALSE`)
-#' and not checking for past saves (i.e., `check = FALSE`, both default).
-#' The functionality is intended for a number of very slow models or a very
-#' large number of faster models,
-#' such that time spent rerunning code would be onerous.
+#' and not checking for past saves (i.e., `check = FALSE`, both default),
+#' but may be beneficial in cases with lots of models or very slow models.
 #' However, the functionality can be safely used for faster runs too.
 #'
 #' @seealso
@@ -183,16 +187,16 @@ sem.check <- function(
     name = "sem", check = FALSE, save_out = FALSE
 ) {
   if (!is.logical(fit_save)) {
-    stop("`fit_save` is not logical. It should be `TRUE` or `FALSE`.")
+    stop("'fit_save' is not logical. It should be 'TRUE' or 'FALSE'.")
   }
   if (fit_save & !is.character(fit_measures)) {
-    stop("`fit_measures` is not a character vector.")
+    stop("'fit_measures' is not a character vector.")
   }
   if (!is.logical(check)) {
-    stop("`check` is not logical. It should be `TRUE` or `FALSE`.")
+    stop("'check' is not logical. It should be 'TRUE' or 'FALSE'.")
   }
   if (!is.logical(save_out)) {
-    stop("`save_out` is not logical. It should be `TRUE` or `FALSE`.")
+    stop("'save_out' is not logical. It should be 'TRUE' or 'FALSE'.")
   }
   if (save_out | check) {
     found <- FALSE
@@ -207,52 +211,61 @@ sem.check <- function(
       stop(
         paste(
           "A cache directory is not configured so cannot be cleaned.",
-          "Use the `cache.setup()` function to configure a directory to clean."
+          "Use the 'cache.setup()' function to configure a directory to clean."
         )
       )
     }
     cache_dir <- get("cache_dir", envir = get(".cache_env", envir = env))
     if (!is.character(name)) {
-      stop("`name` is not a character string.")
+      stop("'name' is not a character string.")
     }
   }
   if (!is.logical(std)) {
-    stop("`std` is not logical. It should be `TRUE` or `FALSE`.")
+    stop("'std' is not logical. It should be 'TRUE' or 'FALSE'.")
   }
   if (!is.logical(orthogonal)) {
-    stop("`orthogonal` is not logical. It should be `TRUE` or `FALSE`.")
+    stop("'orthogonal' is not logical. It should be 'TRUE' or 'FALSE'.")
   }
   if (!is.logical(std.lv)) {
-    stop("`std.lv` is not logical. It should be `TRUE` or `FALSE`.")
+    stop("'std.lv' is not logical. It should be 'TRUE' or 'FALSE'.")
   }
   if (!is.list(mods)) {
     stop(
       paste(
-        "`mods` is not a list.",
+        "'mods' is not a list.",
         "If you are trying to run a single model, you will have to make a",
         "length 1 list",
-        "(e.g., `mods = list(mod_name = mod)`)"
+        "(e.g., 'mods = list(mod_name = mod)')"
       )
     )
   }
   data <- as.data.frame(data)
   if (is.null(keys_s) & is.null(keys_e)) {
-    stop("At least one of `keys_s` or `keys_e` must be specified.")
+    stop("At least one of 'keys_s' or 'keys_e' must be specified.")
   }
   if (!is.list(keys_s) & !is.null(keys_s)) {
     stop(
       paste(
-        "`keys_s` is not a list.",
+        "'keys_s' is not a list.",
         "Please ensure that keys_s is specified correctly.",
         "See the function's help for further information."
       )
     )
   }
   if (!is.null(keys_s)) {
+    if (length(mods) != length(keys_s)) {
+      stop(
+        paste(
+          "'keys_s' and 'mods' are not the same length.",
+          "If 'keys_s' is supposed to be specified, then it should be the same",
+          "length as 'mods'."
+        )
+      )
+    }
     if (sum(table(names(keys_s)) > 1) > 0) {
       stop(
         paste(
-          "At least two elements of `keys_s` share the same name.",
+          "At least two elements of 'keys_s' share the same name.",
           "Please ensure that all model names are unique."
         )
       )
@@ -261,7 +274,7 @@ sem.check <- function(
   if (!is.list(keys_e) & !is.null(keys_e)) {
     stop(
       paste(
-        "`keys_e` is not a list.",
+        "'keys_e' is not a list.",
         "Please ensure that keys_s is specified correctly.",
         "See the function's help for further information."
       )
@@ -271,7 +284,7 @@ sem.check <- function(
     if (sum(table(names(keys_e)) > 1) > 0) {
       stop(
         paste(
-          "At least two elements of `keys_e` share the same name.",
+          "At least two elements of 'keys_e' share the same name.",
           "Please ensure that all model names are unique."
         )
       )
@@ -294,12 +307,12 @@ sem.check <- function(
     una_items <- unlist(keys_s)[!(unlist(keys_s)) %in% colnames(data)]
     stop(
       paste0(
-        "The following items are in `keys_s` but they are not in `data`:",
+        "The following items are in 'keys_s' but they are not in 'data':",
         "\n      ",
         paste0(una_items, collapse = "\n      "),
         paste0(
-          "\n\nEnsure that the column names of `data` and keys list item ",
-          "names match and that `data` is a dataframe or coercible to a ",
+          "\n\nEnsure that the column names of 'data' and keys list item ",
+          "names match and that 'data' is a dataframe or coercible to a ",
           "dataframe.\n",
           "If using bifactor.from.keys, ensure that you have not swapped keys ",
           "inadvertently (e.g., keys_g for keys_b)."
@@ -312,9 +325,9 @@ sem.check <- function(
     message(paste0("  ", una_items, collapse = "  \n"))
     stop(
       paste(
-        "The above items are in `keys_e` but they are not in `data`.",
+        "The above items are in 'keys_e' but they are not in 'data'.",
         "Ensure that data is a data frame (or coercible into a data frame)",
-        "and that column names of `data` and keys list item names match."
+        "and that column names of 'data' and keys list item names match."
       )
     )
   }

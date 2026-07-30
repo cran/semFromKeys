@@ -17,6 +17,8 @@
 #' If any other string is used a folder will be created within either the
 #' [getwd()] directory or,
 #' if available, within the directory identified by [here::here()].
+#' If using an RStudio project, these will create the directory in the
+#' project directory.
 #' @param interactive
 #' Logical.
 #' `TRUE` indicates that confirmation will be required before a cache directory
@@ -68,10 +70,17 @@
 #' functionality will work,
 #' regardless of the status of the any recently used cache directories.
 #'
-#' Note also that the function relies on code that was unavailable in versions
-#' of R prior to version 4.0,
+#' The function relies on code that was unavailable in versions of R prior to
+#' version 4.0,
 #' so anyone using an earlier version of R will either have to update R or forgo
 #' the caching functionality.
+#'
+#' `semFromKeys` has no way to know what directories you have specified as the
+#' cache in the past and cannot clean up unknown former cache directories.
+#' Therefore, it is recommended that you use either the default location or
+#' the same location for all models within the same project.
+#' Either of these will enable easy detection, so that unneeded cached files
+#' can be found and deleted.
 #'
 #' Functions that directly or indirectly might require a cache directory are:
 #' [cfa.from.keys()], [bifactor.from.keys()], [efa.from.keys()],
@@ -87,7 +96,7 @@
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   # Setup a cache directory
 #'   cache.setup()
 #'   # Now code with check = TRUE or save_out = TRUE will work, e.g.,
@@ -137,7 +146,7 @@ cache.setup <- function(location = "user", interactive = TRUE) {
     }
   } else {
     if (!is.character(location)) {
-      stop("`location` is not a length 1 character vector")
+      stop("'location' is not a length 1 character vector")
     }
     if (interactive & interactive()) {
       if (requireNamespace("here")) {
