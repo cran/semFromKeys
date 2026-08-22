@@ -11,19 +11,23 @@
 The ‘semFromKeys’ package was designed to streamline running ‘lavaan’
 models with similar structures using keys lists to generate model code
 instead of writing out the code for models manually. For confirmatory
-factor analyses (CFAs) and bifactor models, the code creates and runs a
+factor analyses (CFAs) and bi-factor models, the code creates and runs a
 series of models based on keys indicating each of the factors in the
 models. For exploratory factor analyses (EFAs) keys list are used to
 create a target rotation for a single EFA. For latent variable
 correlations, the model takes fitted CFA models and runs a series of
 models computing correlations between latent variables and, optionally,
-single items. For exploratory structural equation models (ESEM), the
-code takes a fitted EFA model and fitted CFA and/or bifactor models and
-runs an ESEM for each CFA or bifactor model input. In the ESEM, the EFA
-factors predict a series of latent variables in separate models using
-Burt’s (1976) 2-stage procedure to prevent interpretational confounding.
-The ESEM models were designed to run analyses equivalent to that of
-Bainbridge, Ludeke, and Smillie (2022).
+single items. For exploratory structural equation models (ESEM), there
+are two options. In each case, EFA factors predict scale factors. The
+first option (`esem.from.keys`) takes EFA and CFA keys as inputs and
+uses Rosseel and Loh’s (2022) SAM method to prevent interpretational
+confounding (Burt, 1976), and the second (`esem.from.mods`) takes a
+fitted EFA model and fitted CFA and/or bi-factor models and uses Burt’s
+(1976) 2-stage procedure to prevent interpretational confounding. The
+ESEM models were designed to run analyses analogous to those of
+Bainbridge, Ludeke, and Smillie (2022). Additionally, the `sem.path`
+function runs traditional latent variable structural equation models
+(SEM) using fitted CFA objects and path code as input.
 
 Although the package might be of most use to those running ESEM similar
 to those of Bainbridge and colleagues (2022), it could also be very
@@ -31,7 +35,9 @@ helpful to anyone wanting to create a correlation matrix based on latent
 variables rather than sum scores or to estimate a CFA measurement model
 for each scale in a sample to either check measurement characteristics
 before proceeding with further analyses or to simply compute measurement
-model based reliability statistics.
+model based reliability statistics. It may also be useful to those
+wanting to preclude interpretational confounding in a standard latent
+variable SEM.
 
 For sets of models that take a long time to run, code has been included
 to allow the first run to save outputs that can be checked against in
@@ -75,7 +81,8 @@ install.packages("semFromKeys")
 
 The following example generates keys, runs CFAs and an EFA using these
 keys, computes correlations between CFA latent variables, and uses
-outputs from these to run ESEMs.
+outputs from these to run ESEMs. The alternative `esem.from.keys`
+function is also demonstrated.
 
 ### CFAs
 
@@ -274,20 +281,131 @@ latent_cors <- sem.cor(BFIGritHope, cfa_fit$fit, nagy = FALSE)
 #> 4 / 6   grit_p.hope_a
 #> 5 / 6   grit_p.hope_p
 #> 6 / 6   hope_a.hope_p
-latent_cors$cor_mat
-#>           grit_c    grit_p    hope_a    hope_p
-#> grit_c 1.0000000 0.4962176 0.3724859 0.3002280
-#> grit_p 0.4962176 1.0000000 0.8993154 0.8325711
-#> hope_a 0.3724859 0.8993154 1.0000000 0.9276052
-#> hope_p 0.3002280 0.8325711 0.9276052 1.0000000
+```
+
+``` r
+round(latent_cors$cor_mat, 3)
+#>        grit_c grit_p hope_a hope_p
+#> grit_c  1.000  0.496  0.372  0.300
+#> grit_p  0.496  1.000  0.899  0.833
+#> hope_a  0.372  0.899  1.000  0.928
+#> hope_p  0.300  0.833  0.928  1.000
 ```
 
 ### ESEM
 
-Finally, outputs from CFA, bifactor, and EFA models can be used as
-inputs into ESEMs where the scales of the CFAs and bifactor models are
-regressed on the EFA factors. In this example, bifactor models are not
-included.
+Two function run ESEM with EFA factors predicting measurement model
+latent variables. The first of these—`esem.from.keys`—uses keys lists to
+run the models using Rosseel and Loh’s (2022) “Structure After
+Measurement” (SAM) method, and the second—`esem.from.mods`—uses fitted
+CFA, bi-factor, and EFA models to run the models using Burt’s (1976)
+2-stage procedure. In general, the SAM method is superior, so
+`esem.from.keys` should be used whenever possible. However,
+`esem.from.keys` currently only supports single-factor measurement
+models and `esem.from.mods` should be used for bi-factor models. See
+`?esem.from.keys` for details.
+
+``` r
+esam_fit <- esem.from.keys(BFIGritHope, keys_e, keys, fit_save = FALSE)
+#> Fitting models
+#> 1 / 4   grit_c
+#> 2 / 4   grit_p
+#> 3 / 4   hope_a
+#> 4 / 4   hope_p
+#> Generating parameter estimates
+#> 1 / 4   grit_c
+#> 2 / 4   grit_p
+#> 3 / 4   hope_a
+#> 4 / 4   hope_p
+```
+
+The function provides standard ‘lavaan’ outputs, as well as r-squared
+values and regression parameters.
+
+``` r
+lavaan::summary(esam_fit$fit$grit_c)  # lavaan summary for the SAM method
+#> This is lavaan 0.7-2 -- using the SAM approach to SEM
+#> 
+#>   SAM method                                    GLOBAL
+#>   Number of measurement blocks                       2
+#>   Estimator measurement part                        ML
+#>   Estimator  structural part                        ML
+#> 
+#>   Number of observations                           388
+#>   Number of missing patterns                         1
+#> 
+#> Summary Information Measurement Part:
+#> 
+#>   Block                        Latent Nind    Chisq   Df
+#>       1 bfi_e,bfi_a,bfi_c,bfi_n,bfi_o   60 4808.621 1480
+#>       2                        grit_c    6   64.001    9
+#> 
+#> Model Test User Model:
+#>                                               Standard      Scaled
+#>   Test Statistic                              5500.324    3876.504
+#>   Degrees of freedom                              1824        1824
+#>   P-value (Chi-square)                           0.000       0.000
+#>   Scaling correction factor                                  1.419
+#>     Yuan-Chan (2002) correction                                   
+#> 
+#> Parameter Estimates:
+#> 
+#>   Standard errors                              Twostep
+#>   Information                                 Observed
+#>   Observed information based on                Hessian
+#> 
+#> Regressions:
+#>                    Estimate  Std.Err  z-value  P(>|z|)
+#>   grit_c ~                                            
+#>     bfi_e            -0.155    0.049   -3.153    0.002
+#>     bfi_a             0.077    0.050    1.549    0.121
+#>     bfi_c             0.432    0.059    7.367    0.000
+#>     bfi_n            -0.367    0.056   -6.558    0.000
+#>     bfi_o             0.100    0.049    2.031    0.042
+#> 
+#> Covariances:
+#>                    Estimate  Std.Err  z-value  P(>|z|)
+#>   bfi_e ~~                                            
+#>     bfi_a             0.144    0.058    2.470    0.014
+#>     bfi_c             0.172    0.057    3.027    0.002
+#>     bfi_n            -0.259    0.055   -4.705    0.000
+#>     bfi_o             0.161    0.057    2.813    0.005
+#>   bfi_a ~~                                            
+#>     bfi_c             0.276    0.054    5.093    0.000
+#>     bfi_n            -0.244    0.055   -4.398    0.000
+#>     bfi_o             0.233    0.056    4.196    0.000
+#>   bfi_c ~~                                            
+#>     bfi_n            -0.421    0.049   -8.670    0.000
+#>     bfi_o             0.285    0.054    5.326    0.000
+#>   bfi_n ~~                                            
+#>     bfi_o            -0.194    0.055   -3.511    0.000
+#> 
+#> Variances:
+#>                    Estimate  Std.Err  z-value  P(>|z|)
+#>    .grit_c            0.492    0.085    5.793    0.000
+```
+
+``` r
+round(esam_fit$r2, 3)
+#>           R2    se ci.lower ci.upper
+#> grit_c 0.508 0.042    0.426    0.590
+#> grit_p 0.731 0.029    0.675    0.788
+#> hope_a 0.782 0.024    0.736    0.828
+#> hope_p 0.610 0.038    0.535    0.685
+```
+
+``` r
+esam_fit$b$grit_c
+#>       rhs est.std    se      z pvalue ci.lower ci.upper
+#> 307 bfi_e  -0.155 0.048 -3.223  0.001   -0.248   -0.061
+#> 308 bfi_a   0.077 0.049  1.557  0.120   -0.020    0.174
+#> 309 bfi_c   0.432 0.050  8.669  0.000    0.334    0.530
+#> 310 bfi_n  -0.367 0.050 -7.328  0.000   -0.465   -0.269
+#> 311 bfi_o   0.100 0.049  2.051  0.040    0.004    0.196
+```
+
+The `esem.from.mods` function provides the same outputs as
+`esem.from.keys`, only with somewhat biased standard error estimates.
 
 ``` r
 esem_fit <- esem.from.mods(
@@ -304,9 +422,6 @@ esem_fit <- esem.from.mods(
 #> 3 / 4   hope_a
 #> 4 / 4   hope_p
 ```
-
-The function provides standard ‘lavaan’ outputs, as well as r-squared
-values and regression parameters.
 
 ``` r
 # Not run due to length
@@ -329,9 +444,63 @@ esem_fit$b$grit_c
 #> 392 bfi_o   0.100 0.048  2.112  0.035    0.007    0.193
 ```
 
-To take advantage of functions’ time-saving `check = TRUE` for
-subsequent running of code, a cache directory will need to be set. To
-see how to do this, see `?cache.setup`.
+### SEM
+
+Finally, `semFromkeys` includes a function to help run standard
+structural equation models (SEM). The function takes fitted CFA models
+for the measurement models and lavaan code for the structural path(s)
+and uses Rosseel and Loh’s (2022) method to run the model.
+
+``` r
+path <- "grit_p ~ grit_c + hope_p\nhope_p ~ hope_a"
+sem_fit <- sem.path(path, BFIGritHope, cfa_fit$fit, fit_save = TRUE)
+#> Fitting models
+#> 1 / 1   sam
+#> Generating parameter estimates
+#> 1 / 1   sam
+#> Generating model fit statistics
+#> 1 / 1   sam
+#> lavaan NOTE:  
+#>    the fit measures are computed for the structural part only, conditional on 
+#>    the (fixed) measurement model of step 1.
+```
+
+The function outputs include a standard lavaan summary, r-squared
+values, regression path coefficients and correlations, and fit measures.
+
+``` r
+print(summary(sem_fit$fit))      # Standard lavaan summary
+#> Length  Class   Mode 
+#>      1 lavaan     S4
+```
+
+``` r
+sem_fit$b      # Standardised regression path coefficients
+#>     y_var  x_var est.std    se      z pvalue ci.lower ci.upper
+#> 22 grit_p grit_c   0.268 0.045  5.907      0    0.179    0.357
+#> 23 grit_p hope_p   0.744 0.042 17.871      0    0.663    0.826
+#> 24 hope_p hope_a   0.928 0.026 36.248      0    0.877    0.978
+```
+
+``` r
+sem_fit$r2        # R^2 values
+#>    y_var        R2        se  ci.lower  ci.upper
+#> 1 grit_p 0.7641687 0.0512538 0.6637131 0.8646243
+#> 2 hope_p 0.8604516 0.0474752 0.7674019 0.9535013
+```
+
+``` r
+sem_fit$cors          # Correlations
+#>       lhs op    rhs est.std    se    z pvalue ci.lower ci.upper
+#> 21 grit_c ~~ hope_a   0.372 0.052 7.11      0     0.27    0.475
+```
+
+``` r
+# Fit measures
+round(sem_fit$fit_measures[c("chisq", "df", "pvalue", "cfi", "rmsea")], 3)
+#>   chisq      df  pvalue     cfi   rmsea 
+#> 162.576   2.000   0.000   0.895   0.455
+```
 
 ## References
 
@@ -352,5 +521,9 @@ Nagy, G., Brunner, M., Lüdtke, O., and Greiff, S. (2017). Extension
 Procedures for Confirmatory Factor Analysis. Journal of Experimental
 Education, 85(4), 574-596.
 <https://doi.org/10.1080/00220973.2016.1260524>.
+
+Rosseel, Y. & Loh, W. W. (2022). A structural after measurement approach
+to structural equation modeling. Psychological Methods, 29(3), 561-588.
+<https://doi.org/10.1037/met0000503>.
 
 <!-- You'll need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this. -->

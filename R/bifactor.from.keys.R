@@ -13,8 +13,7 @@
 #' @param keys_b
 #' A named list of group factors in general factors.
 #' Names must be the names of the general factors.
-#' Each list element must be a vector of group factors that load on the general
-#' factors.
+#' Each list element must be a vector of group factors.
 #' Must be the same length as `keys_g`.
 #' @param keys
 #' A named list of items in group factors.
@@ -33,7 +32,7 @@
 #' the same name will be overwritten.
 #' @param std.lv
 #' Logical.
-#' Sets the `std.lv` parameter, as per lavaan (see [lavaan::lavOptions()]).
+#' Sets the `std.lv` parameter, as per lavaan (see [lavaan::lavOptions]).
 #' `TRUE` indicates that factor variances should be fixed to 1.
 #' `FALSE` indicates that loadings of the first items of factors should be fixed
 #' to 1.
@@ -53,13 +52,13 @@
 #' that is, `keys_g` and `keys_b` names must be the general factor names,
 #' and `keys` must be the group factor names.
 #'
-#' The model relies on [sem.check()] for the back-end of running the models.
+#' The model relies on [sem.check] for the back-end of running the models.
 #' This enables saving inputs and outputs from model runs
 #' (with `save_out = TRUE`) and checking to see if anything has changed from
 #' prior runs before running again (with `check = TRUE`).
 #' The functionality was included for a number of very slow models or a lot of
 #' faster models, such that time spent rerunning them would be onerous.
-#' For further details on how this works, see the [sem.check()] function
+#' For further details on how this works, see the [sem.check] function
 #' documentation.
 #'
 #' Please be careful with bifactor models.
@@ -100,8 +99,7 @@
 #' https://doi.org/10.1016/j.intell.2013.06.004.
 #'
 #' @seealso
-#' [sem.check()], which `bifactor.from.keys()` uses for all the back-end, and
-#' [lavaan::sem()], which is used to estimate the models.
+#' [sem.check], [lavaan::sem]
 #'
 #' @importFrom lavaan summary
 #' @export
@@ -136,7 +134,7 @@
 
 bifactor.from.keys <- function(
   keys_g, keys_b, keys, data, fit_save = TRUE, fit_measures = "all",
-  std.lv = TRUE, miss = "ML", est = "default",
+  std.lv = TRUE, miss = "default", est = "default", ordered = NULL,
   name = "bifactor", check = FALSE, save_out = FALSE
 ) {
   if (!is.list(keys_g)) {
@@ -177,7 +175,6 @@ bifactor.from.keys <- function(
             "\n    ",
             paste(grps, collapse = "\n    "),
             "\n\nIf these are items, not group factors, ",
-            "and you are using bifactor.from.keys, ",
             "check that keys_b only contains group factor names."
           )
         )
@@ -209,7 +206,9 @@ bifactor.from.keys <- function(
             paste(
               "The following item(s) are in a group factor but not in the",
               "general factor:\n   ",
-              paste(unlist(keys[y])[!unlist(keys[y]) %in% x], collapse = "\n    ")
+              paste(
+                unlist(keys[y])[!unlist(keys[y]) %in% x], collapse = "\n    "
+              )
             )
           )
           c(x, unlist(keys[y])[!unlist(keys[y]) %in% x])
@@ -249,6 +248,7 @@ bifactor.from.keys <- function(
     miss = miss,
     est = est,
     orthogonal = TRUE,  # Must be TRUE for bifactor models.
+    ordered = ordered,
     check = check,
     save_out = save_out
   )

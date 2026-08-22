@@ -100,7 +100,7 @@ test_that(
           keys_g, keys_b, keys_mistake, BFIGritHope, fit_save = FALSE
         )
       ),
-      "items are in 'keys_s' but they are not in 'data'"
+      "items are in a key but they are not in 'data'"
     )
     expect_error(
       suppressWarnings(
@@ -108,7 +108,7 @@ test_that(
           keys_g_mistake, keys_b, keys, BFIGritHope, fit_save = FALSE
         )
       ),
-      "items are in 'keys_s' but they are not in 'data'"
+      "items are in a key but they are not in 'data'"
     )
     expect_error(
       bifactor.from.keys(
@@ -177,5 +177,18 @@ test_that(
       ),
       "item\\(s\\) are in a group factor but not in the general factor"
     )
+  }
+)
+test_that(
+  "Test ordered",
+  {
+    bif_fit <- bifactor.from.keys(
+      keys_g, keys_b, keys, BFIGritHope, fit_save = FALSE,
+      ordered = names(BFIGritHope)
+    )
+    expect_equal(length(bif_fit), 2)
+    expect_equal(length(bif_fit$fit), length(keys_g))
+    expect_equal(length(bif_fit$par), length(keys_g))
+    expect_equal(sum(sapply(bif_fit$fit, function(x) class(x) != "lavaan")), 0)
   }
 )

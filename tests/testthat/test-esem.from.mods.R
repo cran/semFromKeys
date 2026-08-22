@@ -170,3 +170,52 @@ test_that(
     expect_identical(check_fit, check_fit2)
   }
 )
+# test_that(
+#   "Test ordered",
+#   {
+#     cfa_fit <-
+#       cfa.from.keys(keys, BFIGritHope, FALSE, ordered = names(BFIGritHope))$fit
+#     efa_fit <- efa.from.keys(
+#       keys_e, BFIGritHope, fit_save = FALSE, ordered = names(BFIGritHope)
+#     )$fit
+#     esem_fit <- esem.from.mods(
+#       efa_fit, cfa_fit, data = BFIGritHope, fit_save = FALSE,
+#       ordered = names(BFIGritHope)
+#     )
+#     expect_equal(length(esem_fit), 4)
+#     expect_equal(length(esem_fit$fit), length(keys))
+#     expect_equal(length(esem_fit$par), length(keys))
+#     expect_equal(
+#       sum(sapply(esem_fit$fit, function(x) !inherits(x, "lavaan"))), 0
+#     )
+#     expect_equal(length(esem_fit$b), length(keys))
+#     expect_equal(nrow(esem_fit$r2), length(keys))
+#   }
+# )
+test_that(
+  "'ordered' used in input models",
+  {
+    cfa_fit_ord <- cfa.from.keys(
+      keys[1:2], BFIGritHope, fit_save = FALSE, ordered = names(BFIGritHope)
+    )$fit
+    bif_fit_ord <- bifactor.from.keys(
+      keys_g, keys_b, keys, BFIGritHope, fit_save = FALSE,
+      ordered = names(BFIGritHope)
+    )$fit
+    efa_fit_ord <- efa.from.keys(
+      keys_e, BFIGritHope, fit_save = FALSE, ordered = names(BFIGritHope)
+    )$fit
+    expect_error(
+      esem.from.mods(BFIGritHope, efa_fit, cfa_fit_ord),
+      "one element of 'cfa_fit' is a model with ordinal variables"
+    )
+    expect_error(
+      esem.from.mods(BFIGritHope, efa_fit, bif_fit = bif_fit_ord),
+      "one element of 'bif_fit' is a model with ordinal variables"
+    )
+    expect_error(
+      esem.from.mods(BFIGritHope, efa_fit_ord, cfa_fit),
+      "one element of 'efa_fit' is a model with ordinal variables"
+    )
+  }
+)

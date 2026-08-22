@@ -1,8 +1,8 @@
 #' Creates a latent variable correlation matrix from fitted lavaan measurement
 #' models
 #'
-#' sem.cor takes CFA outputs and produces a correlation matrix between latent
-#' variables and/or single items.
+#' `sem.cor` takes CFA outputs and produces a correlation matrix between latent
+#' variables.
 #'
 #' @inheritParams sem.check
 #' @param fit_y A named list of CFA fitted objects.
@@ -10,7 +10,7 @@
 #' A named list of CFA fitted objects to be correlated with fit_y variables
 #' or 'NULL'.
 #' @param items
-#' A vector of single-item variables to correlate with 'fit_y' latent variables.
+#' A vector of single-item variables to correlate with `fit_y` latent variables.
 #' Must not include any items contributing to the measurement of a `fit_y`
 #' latent variable.
 #' @param item_loadings
@@ -33,32 +33,31 @@
 #' procedure instead of Burt's (1976) 2-stage procedure.
 #'
 #' @return
-#' Returns a list of length 4.
-#' The first element is the fitted lavaan models ('fit').
-#' The second element is the correlation matrix ('cor_mat').
-#' The third and fourth elements are the upper and lower confidence intervals
-#' from the models ('ci_lower' and 'ci_upper', respectively).
+#' Returns a list of length 3-8 depending on option selections.
+#' All versions include fitted lavaan models ('fit');
+#' a correlation matrix ('cor_mat'); and
+#' a list of upper and lower 95% confidence intervals of the correlations.
+#' If `fit_save = TRUE`, a list of fit measures is also returned, and,
+#' if `nagy = TRUE`, matrices of residual correlations and lists of their 95%
+#' confidence intervals are also returned.
 #'
 #' @details
 #' The function computes correlations between latent variables from fitted CFA
 #' models, including either all latent variables, or between two sets of latent
 #' variables.
-#' To compute a full correlation matrix include all CFA models in a list as
-#' `fit_y`, alternatively,
-#' to correlate a set of dependant variables with a set of independent
-#' variables,
-#' set `fit_y` as a list of fitted CFA models of dependant variables and
-#' set `fit_x` as a list of fitted CFA models of independent variables.
-#' Correlations between the `fit_y` latent variables and single items can also
-#' be optionally included by setting `items` as a vector of item names.
-#' In this case, items will be treated as single item latent variables with
-#' reliability = `item_loadings`.
+#' If both `fit_x = NULL` and `items = NULL`, then correlations between all
+#' `fit_y` latent variables are computed. If either `fit_x` or `items`
+#' are specified, then correlations will be computed between `fit_y` latent
+#' variables and any specified `fit_x` latent variables and `items`.
+#' Items are treated as single item latent variables with loadings of
+#' `item_loadings` if specified or freely estimated otherwise (equivalent to
+#' correlations with the items themselves).
 #'
 #' Each correlation is calculated in a separate model.
 #' This approach saves time for longer lists of variables compared to including
-#' everything in one model and
-#' it also means that excluding a variable cannot change correlations between
-#' other variables (which is possible when all are included together).
+#' everything in one model and it also means that excluding a variable cannot
+#' change correlations between other variables (which is possible when all are
+#' included together).
 #' The function uses either Burt's 2-stage procedure when `nagy = FALSE` or
 #' Nagy and colleagues' (2017) extension procedure when `nagy = TRUE`
 #' to control for interpretational confounding (Burt, 1976).
@@ -66,23 +65,34 @@
 #' Burt's method works by fixing measurement model parameters in the model
 #' estimating structural parameters.
 #' This method means that less than ideal fit at the measurement level does not
-#' propagate though the model as the measurement parameters are fixed.
+#' latent variable correlations as the measurement parameters are fixed.
 #' It also means that the latent variables interpretation cannot change with the
-#' addition of different variables,
-#' thereby solving interpretational confounding.
-#' However, it is not a perfect solution because it underestimates uncertainty
-#' in the measurement part of the structural model (e.g., Nagy et al., 2017),
-#' which results in biased standard errors and fit statistics.
+#' addition of different variables, thereby solving interpretational
+#' confounding.
+#' However, it underestimates uncertainty in the measurement part of the
+#' structural model (e.g., Nagy et al., 2017), which results in biased standard
+#' errors and fit statistics.
 #'
 #' Alternatively, Nagy's method involves allowing item residuals to correlate
 #' with external variables (or factors) and constrains those relationships
 #' such that the model is identifiable.
-#' If the sums of squares of correlations between all combinations of factors'
-#' items and external factors are minimised,
-#' measurement parameters in the structural model match those of isolated
-#' measurement models without having to constrain them directly.
+#' Specifically, for a standard two latent variable model, the sum of squares of
+#' the correlations between the first latent variable's items' residuals and the
+#' second latent variable is minimised, and the sum of squares of the
+#' correlations between the second latent variable's items' residuals and the
+#' first latent variable is minimised.
+#' When a model includes a single latent variable and an item, the sum of
+#' squares of the correlations between the latent variable's items' residuals
+#' and the item's latent variable is minimised.
+#' By using this method, measurement parameters in the structural model match
+#' those of isolated measurement models without having to constrain them
+#' directly.
 #' As a result, unbiased standard errors are preserved while simultaneously
 #' eliminating interpretational confounding.
+#'
+#' If Nagy and colleagues' (2017) method is selected, correlations between
+#' factors and item residuals will be included in the output and may provide
+#' useful insight into idiosyncratic item variance (Nagy et al., 2017).
 #'
 #' Burt's method is faster but artificially constrains parameters,
 #' thereby biasing standard errors and model fit indices.
@@ -93,33 +103,28 @@
 #' It is possible for latent variable correlations to produce a non-positive
 #' definite correlation matrix between variables included in `fit_y`,
 #' especially when closely related factors are included.
-#' If the matrix of latent variables is not positive definite,
-#' then the matrix will be adjusted to the nearest positive definite
-#' matrix using the [Matrix::nearPD()] function,
-#' which employs the method developed by Higham (2002),
-#' and a message will state that the matrix was adjusted and the maximum
+#' If the matrix of latent variables is not positive definite, then the matrix
+#' will be adjusted to the nearest positive definite matrix using the
+#' [Matrix::nearPD] function, which employs the method developed by Higham
+#' (2002), and a message will state that the matrix was adjusted and the maximum
 #' adjustment to any cell.
 #' Confidence intervals will be adjusted by the same amount.
 #'
-#' The model relies on [sem.check()] for the back-end of running the models,
+#' The model relies on [sem.check] for the back-end of running the models,
 #' which enables saving inputs and outputs from model runs
 #' (with `save_out = TRUE`) and checking to see if anything has changed from
 #' prior runs before running again (with `check = TRUE`).
 #' The functionality was included for a number of very slow models or a lot of
 #' faster models, such that time spent rerunning them would be onerous.
-#' In the case of `sem.cor()`, the number of correlations can add up quickly,
+#' In the case of `sem.cor`, the number of correlations can add up quickly,
 #' so the functionality may be useful
 #' (e.g., with 20 scales, there are 19 + 18 + 17 + ... + 1 = 190 correlations).
-#' For further details on how this works, see the [sem.check()] function
+#' For further details on how this works, see the [sem.check] function
 #' documentation.
 #'
 #' @seealso
-#' [sem.check()], which `sem.cor()` uses for all the back-end;
-#' [lavaan::sem()], which is used to estimate the models;
-#' [matrixcalc::is.positive.definite], which is used to assess whether the
-#' correlation matrix between `fit_y` constructs is positive definite; and
-#' [Matrix::nearPD()] for the function used to transform non-positive definite
-#' matrices into positive definite matrices.
+#' [sem.check], [lavaan::sem], [matrixcalc::is.positive.definite],
+#' [Matrix::nearPD]
 #'
 #' @importFrom matrixcalc is.positive.definite
 #' @importFrom Matrix nearPD
@@ -164,8 +169,8 @@
 #' cors2$cor_mat
 
 sem.cor <- function(
-    data, fit_y, fit_x = NULL, items = NULL,  item_loadings = NULL, nagy = TRUE,
-    fit_save = FALSE, fit_measures = "all", miss = "ML", est = "default",
+    data, fit_y, fit_x = NULL, items = NULL, item_loadings = NULL, nagy = TRUE,
+    fit_save = FALSE, fit_measures = "all", miss = "default", est = "default",
     name = "cors", check = FALSE, save_out = FALSE
 ) {
   # Single model instead of list.
@@ -239,20 +244,48 @@ sem.cor <- function(
       )
     }
   }
-  if (length(fit_y) <= 1) {
-    if (is.null(items) & is.null(fit_x)) {
-      stop(
+  if (length(fit_y) <= 1 & is.null(items) & is.null(fit_x)) {
+    stop(
+      paste(
+        "'fit_y' is not at least length 2, and 'fit_x' and items are not",
+        "specified.",
+        "At least one measurement model and one item or two measurement",
+        "models must be specified to calculate correlations with or between",
+        "latent variables."
+      )
+    )
+  }
+  par1 <- lapply(fit_y, parameterEstimates)
+  if (!nagy) {
+    lapply(
+      par1,
+      function(x) {
+        if (sum(x$op == "|") > 0) {
+          stop(
+            paste(
+              "At least one element of 'fit_y' is a model with ordinal",
+              "variables, which are not currently supported in 'sem.cor'.",
+              "Using 'sem.cor' with 'nagy = TRUE' can run the models with the",
+              "current inputs, but variables will not be treated as ordinal.",
+              "Alternatively, re-run the input models with all variables",
+              "treated as continuous."
+            )
+          )
+        }
+      }
+    )
+  } else {
+    if (sum(sapply(par1, function(x) sum(x$op == "|") > 0)) > 0) {
+      warning(
         paste(
-          "'fit_y' is not at least length 2, and 'fit_x' and items are not",
-          "specified.",
-          "At least one measurement model and one item or two measurement",
-          "models must be specified to calculate correlations with or between",
-          "latent variables."
+          "At least one element of 'fit_y' is a model with ordinal",
+          "variables, which are not currently supported in 'sem.cor'.",
+          "Given 'nagy = TRUE', the models can run with the",
+          "current inputs, but variables have not be treated as ordinal."
         )
       )
     }
   }
-  par1 <- lapply(fit_y, parameterEstimates)
   # Rename y objects to match factors
   names(fit_y) <- names(par1) <- sapply(
     par1,
@@ -264,7 +297,7 @@ sem.cor <- function(
           paste0(
             "The 'fit_y' model including '", paste(yn, collapse = "' and '"),
             "' includes more than one latent variable. ",
-            "These models are not currently supported by 'sem.cor()'."
+            "These models are not currently supported by 'sem.cor'."
           )
         )
       } else {
@@ -272,7 +305,7 @@ sem.cor <- function(
       }
     }
   )
-  if (is.null(fit_x) & length(fit_y) >= 2) {
+  if (is.null(fit_x) & is.null(items) & length(fit_y) >= 2) {
     pars <- lapply(
       stats::setNames(
         seq_along(par1[-length(par1)]),
@@ -313,6 +346,36 @@ sem.cor <- function(
         }
       }
     )
+    if (!nagy) {
+      lapply(
+        par2,
+        function(x) {
+          if (sum(x$op == "|") > 0) {
+            stop(
+              paste(
+                "At least one element of 'fit_x' is a model with ordinal",
+                "variables, which are not currently supported in 'sem.cor'.",
+                "Using 'sem.cor' with 'nagy = TRUE' can run the models with",
+                "the current inputs, but variables will not be treated as",
+                "ordinal. Alternatively, re-run the input models with all",
+                "variables treated as continuous."
+              )
+            )
+          }
+        }
+      )
+    } else {
+      if (sum(sapply(par2, function(x) sum(x$op == "|") > 0)) > 0) {
+        warning(
+          paste(
+            "At least one element of 'fit_x' is a model with ordinal",
+            "variables, which are not currently supported in 'sem.cor'.",
+            "Given 'nagy = TRUE', the models can run with the",
+            "current inputs, but variables have not be treated as ordinal."
+          )
+        )
+      }
+    }
     pars <- sapply(
       par1,
       function(y) {
@@ -321,7 +384,7 @@ sem.cor <- function(
       simplify = FALSE
     )
   }
-  if ((is.null(fit_x) & length(fit_y) >= 2) | !is.null(fit_x)) {
+  if ((is.null(fit_x) & is.null(items)) | !is.null(fit_x)) {
     mod_key <- lapply(
       pars,
       function(k) {
@@ -334,7 +397,7 @@ sem.cor <- function(
             y1 <- y[y$op == "~~" | y$op == "=~", ]
             key_x <- unique(x1$rhs[x1$op == "=~"])
             key_y <- unique(y1$rhs[y1$op == "=~"])
-            key0 <- unique(c(key_x, key_y))
+            key0 <- unique(c(key_y, key_x))
             xn <- unique(x1$lhs[x1$op == "=~"])
             yn <- unique(y1$lhs[y1$op == "=~"])
             # Any shared items. Need to unfix residual variance for these.
@@ -401,7 +464,7 @@ sem.cor <- function(
                 paste(y1$lhs, y1$op, y1$est, "*", y1$rhs, collapse = "\n"),
                 collapse = "\n"
               )
-              return(list(mod = mod0, key = key0))
+              return(list(mod = mod0, key = key0, xn = xn, yn = yn))
             } else {
               x1l <- x1[x1$op == "=~", ]
               y1l <- y1[y1$op == "=~", ]
@@ -478,17 +541,21 @@ sem.cor <- function(
                   )
                 )
               )
-              return(list(mod = mod0, key = key0))
+              return(list(mod = mod0, key = key0, xn = xn, yn = yn))
             }
           }
         )
         mod1 <- lapply(tmp, function(x) x$mod)
         key1 <- lapply(tmp, function(x) x$key)
-        return(list(mod = mod1, key = key1))
+        xn <- sapply(tmp, function(x) x$xn)
+        yn <- sapply(tmp, function(x) x$yn)
+        return(list(mod = mod1, key = key1, xn = xn, yn = yn))
       }
     )
     mods <- unlist(lapply(mod_key, function(x) x$mod), recursive = FALSE)
     key <- unlist(lapply(mod_key, function(x) x$key), recursive = FALSE)
+    xn <- unlist(lapply(mod_key, function(x) x$xn), recursive = FALSE)
+    yn <- unlist(lapply(mod_key, function(x) x$yn), recursive = FALSE)
   } else {
     mods <- NULL
     key <- NULL
@@ -618,12 +685,10 @@ sem.cor <- function(
     est = est,
     check = check,
     save_out = save_out,
-    std.lv = TRUE
+    std.lv = TRUE,
+    ordered = NULL
   )
-  if (!is.null(fit_x) | length(fit_y) > 1) {
-    xn0 <- sub(".*\\.", "", names(mods))
-    xn <- xn0[!xn0 %in% items]
-    yn <- sub("\\..*", "", names(mods))[!xn0 %in% items]
+  if (!is.null(fit_x) | (length(fit_y) > 1 & is.null(items))) {
     cors_y <- mapply(
       x = fit$par_std[
         !grepl(paste0("\\.", items, "$", collapse = "|"), names(fit$par_std))
@@ -812,7 +877,7 @@ sem.cor <- function(
     rownames(ci_lower_yi) <- items
     rownames(ci_upper_yi) <- items
   }
-  if (is.null(fit_x) & length(fit_y) > 1) {
+  if (is.null(fit_x) & is.null(items)) {
     if (!is.positive.definite(cor_mat_y)) {
       cor_mat_y0 <- as.matrix(nearPD(cor_mat_y, corr = TRUE)$mat)
       dif_mat <- cor_mat_y - cor_mat_y0
@@ -826,7 +891,7 @@ sem.cor <- function(
       warning(
         paste0(
           "The correlation matrix between 'fit_y' constructs has been adjusted",
-          " from initial estimates with the 'Matrix::nearPD()' function ",
+          " from initial estimates with the 'Matrix::nearPD' function ",
           "to ensure it is positive definite.\n  ",
           "The maximum adjustment to any cell was ", max_adj, ".\n  ",
           "'ci_lower' and 'ci_upper' were adjusted by the same absolute amount",
@@ -839,7 +904,7 @@ sem.cor <- function(
     cor_mat <- cor_mat_y
     ci_lower <- ci_lower_y
     ci_upper <- ci_upper_y
-  } else if (is.null(fit_x) & length(fit_y) == 1) {
+  } else if (is.null(fit_x)) {
     cor_mat <- cor_mat_yi
     ci_lower <- ci_lower_yi
     ci_upper <- ci_upper_yi
@@ -848,18 +913,250 @@ sem.cor <- function(
     ci_lower <- rbind(ci_lower_y, ci_lower_yi)
     ci_upper <- rbind(ci_upper_y, ci_upper_yi)
   }
+  if (nagy) {
+    rcy0 <- sapply(
+      names(fit_y),
+      function(yn) {
+        y <- fit$par_std[grep(yn, names(fit$par_std))]
+        do.call(
+          cbind,
+          lapply(
+            y,
+            function(y1) {
+              y2 <- y1[grepl("p((x|i)y|yx)", y1$label) & y1$lhs != yn, ]
+              y3 <- data.frame(y2$est.std, row.names = y2$rhs)
+              names(y3) <- y2$lhs[[1]]
+              y3
+            }
+          )
+        )
+      },
+      simplify = FALSE
+    )
+    if (!is.null(fit_x) | !is.null(items)) {
+      names(rcy0) <- NULL
+      rcy <- do.call(rbind, rcy0)
+    } else {
+      rcy <- do.call(
+        cbind,
+        lapply(
+          names(rcy0),
+          function(x) {
+            x1 <- rcy0[names(rcy0) != x]
+            names(x1) <- rep("", length(x1))
+            x2 <- do.call(rbind, lapply(x1, function(y) y[names(y) == x]))
+            x3 <- x2[unique(unlist(key)), , drop = FALSE]
+            rownames(x3) <- unique(unlist(key))
+            x3
+          }
+        )
+      )
+    }
+    rcy_l0 <- sapply(
+      names(fit_y),
+      function(yn) {
+        y <- fit$par_std[grep(yn, names(fit$par_std))]
+        do.call(
+          cbind,
+          lapply(
+            y,
+            function(y1) {
+              y2 <- y1[grepl("p((x|i)y|yx)", y1$label) & y1$lhs != yn, ]
+              y3 <- data.frame(y2$ci.lower, row.names = y2$rhs)
+              names(y3) <- y2$lhs[[1]]
+              y3
+            }
+          )
+        )
+      },
+      simplify = FALSE
+    )
+    if (!is.null(fit_x) | !is.null(items)) {
+      names(rcy_l0) <- NULL
+      rcy_l <- do.call(rbind, rcy_l0)
+    } else {
+      rcy_l <- do.call(
+        cbind,
+        lapply(
+          names(rcy_l0),
+          function(x) {
+            x1 <- rcy_l0[names(rcy_l0) != x]
+            names(x1) <- rep("", length(x1))
+            x2 <- do.call(rbind, lapply(x1, function(y) y[names(y) == x]))
+            x3 <- x2[unique(unlist(key)), , drop = FALSE]
+            rownames(x3) <- unique(unlist(key))
+            x3
+          }
+        )
+      )
+    }
+    rcy_u0 <- sapply(
+      names(fit_y),
+      function(yn) {
+        y <- fit$par_std[grep(yn, names(fit$par_std))]
+        do.call(
+          cbind,
+          lapply(
+            y,
+            function(y1) {
+              y2 <- y1[grepl("p((x|i)y|yx)", y1$label) & y1$lhs != yn, ]
+              y3 <- data.frame(y2$ci.upper, row.names = y2$rhs)
+              names(y3) <- y2$lhs[[1]]
+              y3
+            }
+          )
+        )
+      },
+      simplify = FALSE
+    )
+    if (!is.null(fit_x) | !is.null(items)) {
+      names(rcy_u0) <- NULL
+      rcy_u <- do.call(rbind, rcy_u0)
+    } else {
+      rcy_u <- do.call(
+        cbind,
+        lapply(
+          names(rcy_u0),
+          function(x) {
+            x1 <- rcy_u0[names(rcy_u0) != x]
+            names(x1) <- rep("", length(x1))
+            x2 <- do.call(rbind, lapply(x1, function(y) y[names(y) == x]))
+            x3 <- x2[unique(unlist(key)), , drop = FALSE]
+            rownames(x3) <- unique(unlist(key))
+            x3
+          }
+        )
+      )
+    }
+    if (!is.null(fit_x)) {
+      rcx <- do.call(
+        rbind,
+        lapply(
+          names(fit_x),
+          function(xn) {
+            x <- fit$par_std[grep(xn, names(fit$par_std))]
+            do.call(
+              cbind,
+              lapply(
+                x,
+                function(x1) {
+                  x2 <- x1[grep("pyx", x1$label), ]
+                  x3 <- data.frame(x2$est.std, row.names = x2$rhs)
+                  names(x3) <- x2$lhs[[1]]
+                  x3
+                }
+              )
+            )
+          }
+        )
+      )
+      rcx_l <- do.call(
+        rbind,
+        lapply(
+          names(fit_x),
+          function(xn) {
+            x <- fit$par_std[grep(xn, names(fit$par_std))]
+            do.call(
+              cbind,
+              lapply(
+                x,
+                function(x1) {
+                  x2 <- x1[grep("pyx", x1$label), ]
+                  x3 <- data.frame(x2$ci.lower, row.names = x2$rhs)
+                  names(x3) <- x2$lhs[[1]]
+                  x3
+                }
+              )
+            )
+          }
+        )
+      )
+      rcx_u <- do.call(
+        rbind,
+        lapply(
+          names(fit_x),
+          function(xn) {
+            x <- fit$par_std[grep(xn, names(fit$par_std))]
+            do.call(
+              cbind,
+              lapply(
+                x,
+                function(x1) {
+                  x2 <- x1[grep("pyx", x1$label), ]
+                  x3 <- data.frame(x2$ci.upper, row.names = x2$rhs)
+                  names(x3) <- x2$lhs[[1]]
+                  x3
+                }
+              )
+            )
+          }
+        )
+      )
+      if (fit_save) {
+        return(
+          list(
+            fit = fit$fit,
+            cor_mat = cor_mat,
+            ci = list(ci_lower = ci_lower, ci_upper = ci_upper),
+            fit_measures = fit$fit_measures,
+            residual_cors_y = rcy,
+            residual_cors_y_ci = list(ci_lower = rcy_l, ci_upper = rcy_u),
+            residual_cors_x = rcx,
+            residual_cors_x_ci = list(ci_lower = rcx_l, ci_upper = rcx_u)
+          )
+        )
+      } else {
+        return(
+          list(
+            fit = fit$fit,
+            cor_mat = cor_mat,
+            ci = list(ci_lower = ci_lower, ci_upper = ci_upper),
+            residual_cors_y = rcy,
+            residual_cors_y_ci = list(ci_lower = rcy_l, ci_upper = rcy_u),
+            residual_cors_x = rcx,
+            residual_cors_x_ci = list(ci_lower = rcx_l, ci_upper = rcx_u)
+          )
+        )
+      }
+    }
+    if (fit_save) {
+      return(
+        list(
+          fit = fit$fit,
+          cor_mat = cor_mat,
+          ci = list(ci_lower = ci_lower, ci_upper = ci_upper),
+          fit_measures = fit$fit_measures,
+          residual_cors = rcy,
+          residual_cors_ci = list(ci_lower = rcy_l, ci_upper = rcy_u)
+        )
+      )
+    } else {
+      return(
+        list(
+          fit = fit$fit,
+          cor_mat = cor_mat,
+          ci = list(ci_lower = ci_lower, ci_upper = ci_upper),
+          residual_cors = rcy,
+          residual_cors_ci = list(ci_lower = rcy_l, ci_upper = rcy_u)
+        )
+      )
+    }
+  }
   if (fit_save) {
     return(
       list(
-        fit = fit$fit, fit_measures = fit$fit_measures,
-        cor_mat = cor_mat, ci_lower = ci_lower, ci_upper = ci_upper
+        fit = fit$fit,
+        cor_mat = cor_mat,
+        ci = list(ci_lower = ci_lower, ci_upper = ci_upper),
+        fit_measures = fit$fit_measures
       )
     )
   } else {
     return(
       list(
         fit = fit$fit,
-        cor_mat = cor_mat, ci_lower = ci_lower, ci_upper = ci_upper
+        cor_mat = cor_mat,
+        ci = list(ci_lower = ci_lower, ci_upper = ci_upper)
       )
     )
   }

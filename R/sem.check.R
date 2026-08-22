@@ -34,12 +34,12 @@
 #' `lavaan::fitMeasures(fit$fit$[model name])`.
 #' @param fit_measures
 #' A vector of fit measures to save or 'all' to select all fit measures,
-#' as per the `fit.measures` parameter from lavaan's [lavaan::fitMeasures()]
+#' as per the `fit.measures` parameter from lavaan's [lavaan::fitMeasures]
 #' function.
 #' Defaults to 'all'. Irrelevant if `fit_save = FALSE`.
 #' @param target
 #' A matrix indicating a rotation target,
-#' as used in the `rotation.args` argument in lavaan (see [lavaan::efa()].
+#' as used in the `rotation.args` argument in lavaan (see [lavaan::efa]).
 #' If `NULL` (default),
 #' target is not specified and lavaan uses default behaviour.
 #' Irrelevant when the model does not include an EFA or ESEM.
@@ -51,7 +51,7 @@
 #' the same name will be overwritten.
 #' @param orthogonal
 #' Logical.
-#' Sets the `orthogonal` parameter, as per lavaan (see [lavaan::lavOptions()]).
+#' Sets the `orthogonal` parameter, as per lavaan (see [lavaan::lavOptions]).
 #' `TRUE` indicates that unspecified latent variable correlations should be
 #' fixed at 0;
 #' `FALSE` indicates that unspecified latent variable correlations should be
@@ -59,19 +59,26 @@
 #' Defaults to `FALSE`.
 #' @param miss
 #' A string.
-#' Sets the `missing` parameter, as per lavaan (see [lavaan::lavOptions()]).
-#' Defaults to 'ML'.
+#' Sets the `missing` parameter, as per lavaan (see [lavaan::lavOptions]).
+#' Defaults to 'default', which uses 'ML' for `ordered = NULL` and 'pairwise'
+#' for any other value of `ordered`.
 #' @param est
 #' A string.
-#' Sets the `estimator` parameter, as per lavaan (see [lavaan::lavOptions()]).
+#' Sets the `estimator` parameter, as per lavaan (see [lavaan::lavOptions]).
 #' The default ('default') uses the lavaan default for the model being run.
 #' @param std.lv
 #' Logical.
-#' Sets the `std.lv` parameter, as per lavaan (see [lavaan::lavOptions()]).
+#' Sets the `std.lv` parameter, as per lavaan (see [lavaan::lavOptions]).
 #' `TRUE` indicates that factor variances should be fixed to 1.
 #' `FALSE` indicates that loadings of the first items of factors should be fixed
 #' to 1.
 #' Defaults to `FALSE`.
+#' @param ordered
+#' A character vector or `NULL`, as per the `ordered` lavaan argument of the
+#' same name (see, e.g., [lavaan::sem]).
+#' `NULL` indicates that all variables should be treated as continuous.
+#' Otherwise, variables matching an element of the vector will be treated as
+#' continuous. Defaults to `NULL`.
 #' @param check
 #' Logical.
 #' `TRUE` indicates that current inputs should be compared to previous inputs
@@ -86,6 +93,12 @@
 #' Selecting `save_out = TRUE` enables the function to not rerun models next
 #' time if `check = TRUE` the next time the code is run and nothing has changed
 #' in the meantime.
+#' @param use_sam
+#' Logical.
+#' `TRUE` indicates that the [lavaan::sam] function should be used for model
+#' estimation.
+#' `FALSE` indicates that the [lavaan::sem] function should be used for model
+#' estimation.
 #'
 #' @return
 #' Returns a list of length 2 (if `fit_save = FALSE`) or
@@ -96,15 +109,14 @@
 #'
 #' @details
 #' The function is largely intended to be used as a helper function to upstream
-#' functions,
-#' including [cfa.from.keys()], [bifactor.from.keys()], [efa.from.keys()], and
-#' [esem.from.mods()].
+#' functions, including [cfa.from.keys], [bifactor.from.keys],
+#' [efa.from.keys], and [esem.from.keys], among others.
 #' Although it is recommended to use the appropriate upstream function whenever
-#' possible,
-#' there are not (currently) options to do so when customised lavaan models are
-#' required;
+#' possible, there are not (currently) options to do so when customised lavaan
+#' models are required (with the exception of the `extra` argument in
+#' [sem.path];
 #' for example, when allowing two items' residuals to correlate in a CFA.
-#' `sem.check()` can be used in these cases (see example).
+#' `sem.check` can be used in these cases (see example).
 #'
 #' Matching the philosophy of the package, the function is designed to run for
 #' multiple models with a similar design. If you are using the function for a
@@ -126,15 +138,15 @@
 #'
 #' For either `save_out = TRUE` or `check = TRUE`,
 #' the function will look for a cache directory set and created by the
-#' [cache.setup()] function.
+#' [cache.setup] function.
 #' If a cache directory has not been set for the current session,
 #' then the function will exit with an error suggesting that either
-#' [cache.setup()] be run or `save_out` and `check` set to `FALSE`.
+#' [cache.setup] be run or `save_out` and `check` set to `FALSE`.
 #'
 #' When the cache directory is found and output from previous runs are detected,
 #' the comparisons performed are for:
 #' * model code;
-#' * hashes of the data (using [openssl::md5()]);
+#' * hashes of the data (using [openssl::md5]);
 #' * values of the `miss`, `est`, `std`, `std.lv`, and `orthogonal`parameters;
 #' * the class of model objects (i.e., class lavaan); and,
 #' * the class of parameter estimates (i.e., class lavaan.data.frame).
@@ -146,15 +158,15 @@
 #' However, the functionality can be safely used for faster runs too.
 #'
 #' @seealso
-#' [cfa.from.keys()], [efa.from.keys()], [bifactor.from.keys()], and
-#' [esem.from.mods()]---all these function depend upon `sem.check()` to work;
-#' [lavaan::sem()], which is used to estimate the models;
-#' [lavaan::parameterEstimates()], which is used to estimate parameter values;
-#' and [lavaan::fitMeasures()], which is used to estimate fit statistics when
-#' `fit_save = TRUE`.
+#' [cfa.from.keys], [efa.from.keys], [bifactor.from.keys], [esem.from.mods],
+#' [esem.from.keys], [sem.cor], [sem.path], [cache.setup], [lavaan::sem],
+#' [lavaan::sam], [lavaan::efa], [lavaan::parameterEstimates],
+#' [lavaan::standardizedSolution], [lavaan::fitMeasures], [openssl::md5],
+#' [lavaan::lavOptions]
 #'
 #' @importFrom stringr str_replace_all
 #' @importFrom lavaan sem
+#' @importFrom lavaan sam
 #' @importFrom lavaan standardizedSolution
 #' @importFrom lavaan parameterEstimates
 #' @importFrom lavaan fitMeasures
@@ -182,9 +194,9 @@
 sem.check <- function(
     mods, data, keys_s = NULL, keys_e = NULL,
     fit_save = FALSE, fit_measures = "all",
-    miss = "ML", est = "default", std.lv = FALSE, std = TRUE,
-    orthogonal = FALSE, target = NULL,
-    name = "sem", check = FALSE, save_out = FALSE
+    miss = "default", est = "default", std.lv = FALSE, std = TRUE,
+    ordered = NULL, orthogonal = FALSE, target = NULL,
+    name = "sem", check = FALSE, save_out = FALSE, use_sam = FALSE
 ) {
   if (!is.logical(fit_save)) {
     stop("'fit_save' is not logical. It should be 'TRUE' or 'FALSE'.")
@@ -210,8 +222,8 @@ sem.check <- function(
     if (!found) {
       stop(
         paste(
-          "A cache directory is not configured so cannot be cleaned.",
-          "Use the 'cache.setup()' function to configure a directory to clean."
+          "A cache directory is not configured so cannot be used.",
+          "Use the 'cache.setup()' function to configure a cache directory."
         )
       )
     }
@@ -228,6 +240,9 @@ sem.check <- function(
   }
   if (!is.logical(std.lv)) {
     stop("'std.lv' is not logical. It should be 'TRUE' or 'FALSE'.")
+  }
+  if (!is.logical(use_sam)) {
+    stop("'use_sam' is not logical. It should be 'TRUE' or 'FALSE'.")
   }
   if (!is.list(mods)) {
     stop(
@@ -259,6 +274,14 @@ sem.check <- function(
           "'keys_s' and 'mods' are not the same length.",
           "If 'keys_s' is supposed to be specified, then it should be the same",
           "length as 'mods'."
+        )
+      )
+    }
+    if (sum(names(keys_s) != names(mods)) > 0) {
+      stop(
+        paste(
+          "Names of 'keys_s' and names of 'mods' do not match.",
+          "Please ensure they match to allow the function to run."
         )
       )
     }
@@ -307,15 +330,12 @@ sem.check <- function(
     una_items <- unlist(keys_s)[!(unlist(keys_s)) %in% colnames(data)]
     stop(
       paste0(
-        "The following items are in 'keys_s' but they are not in 'data':",
+        "The following items are in a key but they are not in 'data':",
         "\n      ",
         paste0(una_items, collapse = "\n      "),
         paste0(
-          "\n\nEnsure that the column names of 'data' and keys list item ",
-          "names match and that 'data' is a dataframe or coercible to a ",
-          "dataframe.\n",
-          "If using bifactor.from.keys, ensure that you have not swapped keys ",
-          "inadvertently (e.g., keys_g for keys_b)."
+          "\n\nIf using bifactor.from.keys, ensure that you have not swapped ",
+          "keys inadvertently (e.g., keys_g for keys_b)."
         )
       )
     )
@@ -323,20 +343,33 @@ sem.check <- function(
   if (sum(!(unlist(keys_e)) %in% colnames(data)) > 0) {
     una_items <- unlist(keys_e)[!(unlist(keys_e)) %in% colnames(data)]
     message(paste0("  ", una_items, collapse = "  \n"))
-    stop(
-      paste(
-        "The above items are in 'keys_e' but they are not in 'data'.",
-        "Ensure that data is a data frame (or coercible into a data frame)",
-        "and that column names of 'data' and keys list item names match."
+    stop("The above items are in a key but they are not in 'data'.")
+  }
+  if (is.null(ordered)) {
+    ordered_key <- "NULL"
+  } else {
+    if (is.null(keys_s)) {
+      ordered_key <- list(ordered[ordered %in% unlist(keys_e)])
+    } else {
+      ordered_key <- sapply(
+        keys_s,
+        function(x) ordered[ordered %in% c(x, unlist(keys_e))],
+        simplify = FALSE
       )
-    )
+    }
+  }
+  if (miss == "default") {
+    if (is.null(ordered)) {
+      miss <- "ML"
+    } else {
+      miss <- "pairwise"
+    }
   }
   if (save_out) {
     if (!dir.exists(file.path(cache_dir, name))) {
       dir.create(file.path(cache_dir, name))
     }
   }
-  # Tell user which model set is running
   if (check) {
     # Load hashes, prior models, and critical parameters
     m0 <-
@@ -462,7 +495,7 @@ sem.check <- function(
   fit <- with_options(
     list(warn = 1),
     mapply(
-      function(m1, hash_d1, n_mod, mods1, ft, n) {
+      function(m1, hash_d1, n_mod, mods1, ft, n, ord_k) {
         if (hash_d1 & m1 & ft & param_test) {
           fit0[[n_mod]]
         } else {
@@ -476,50 +509,209 @@ sem.check <- function(
             }
           }
           if (is.null(target)) {
-            if (est == "default") {
-              sem(
-                model   = mods1,
-                data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
-                missing = miss,
-                std.lv  = std.lv,
-                orthogonal = orthogonal
-              )
+            if (!use_sam) {
+              if (est == "default") {
+                if (ord_k[1] == "NULL") {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    std.lv  = std.lv,
+                    orthogonal = orthogonal
+                  )
+                } else {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    std.lv  = std.lv,
+                    orthogonal = orthogonal,
+                    ordered = ord_k
+                  )
+                }
+              } else {
+                if (ord_k[1] == "NULL") {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    estimator = est,
+                    std.lv  = std.lv,
+                    orthogonal = orthogonal
+                  )
+                } else {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    estimator = est,
+                    std.lv  = std.lv,
+                    orthogonal = orthogonal,
+                    ordered = ord_k
+                  )
+                }
+              }
             } else {
-              sem(
-                model   = mods1,
-                data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
-                missing = miss,
-                estimator = est,
-                std.lv  = std.lv,
-                orthogonal = orthogonal
-              )
+              if (est == "default") {
+                if (ord_k[1] == "NULL") {
+                  sam(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    std.lv  = std.lv
+                  )
+                } else {
+                  sam(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    std.lv  = std.lv,
+                    ordered = ord_k
+                  )
+                }
+              } else {
+                if (ord_k[1] == "NULL") {
+                  sam(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    mm_args = list(estimator = est),
+                    struc_args = list(estimator = est),
+                    missing = miss,
+                    std.lv  = std.lv
+                  )
+                } else {
+                  sam(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    mm_args = list(estimator = est),
+                    struc_args = list(estimator = est),
+                    missing = miss,
+                    std.lv  = std.lv,
+                    ordered = ord_k
+                  )
+                }
+              }
             }
           } else {
-            if (est == "default") {
-              sem(
-                model   = mods1,
-                data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
-                missing = miss,
-                std.lv  = std.lv,
-                rotation = "target",
-                rotation.args = list(
-                  rstarts = 30, row.weights = "none", algorithm = "gpa",
-                  std.ov = TRUE, target = target, orthogonal = orthogonal
-                )
-              )
+            if (!use_sam) {
+              if (est == "default") {
+                if (ord_k[1] == "NULL") {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    std.lv  = std.lv,
+                    rotation = "target",
+                    rotation.args = list(
+                      rstarts = 30, row.weights = "none", algorithm = "gpa",
+                      std.ov = TRUE, target = target, orthogonal = orthogonal
+                    )
+                  )
+                } else {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    std.lv  = std.lv,
+                    ordered = ord_k,
+                    rotation = "target",
+                    rotation.args = list(
+                      rstarts = 30, row.weights = "none", algorithm = "gpa",
+                      std.ov = TRUE, target = target, orthogonal = orthogonal
+                    )
+                  )
+                }
+              } else {
+                if (ord_k[1] == "NULL") {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    estimator = est,
+                    std.lv  = std.lv,
+                    rotation = "target",
+                    rotation.args = list(
+                      rstarts = 30, row.weights = "none", algorithm = "gpa",
+                      std.ov = TRUE, target = target, orthogonal = orthogonal
+                    )
+                  )
+                } else {
+                  sem(
+                    model   = mods1,
+                    data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                    missing = miss,
+                    estimator = est,
+                    std.lv  = std.lv,
+                    ordered = ord_k,
+                    rotation = "target",
+                    rotation.args = list(
+                      rstarts = 30, row.weights = "none", algorithm = "gpa",
+                      std.ov = TRUE, target = target, orthogonal = orthogonal
+                    )
+                  )
+                }
+              }
             } else {
-              sem(
-                model   = mods1,
-                data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
-                missing = miss,
-                estimator = est,
-                std.lv  = std.lv,
-                rotation = "target",
-                rotation.args = list(
-                  rstarts = 30, row.weights = "none", algorithm = "gpa",
-                  std.ov = TRUE, target = target, orthogonal = orthogonal
+              if (est == "default") {
+                if (ord_k[1] != "NULL") {
+                  warning(
+                    paste(
+                      "The SAM method, used to estimate the latent variable",
+                      "model you are attempting to run, does not support",
+                      "'ordered' variables in ESEM.",
+                      "Therefore, the model will be run as though",
+                      "'ordered = NULL'."
+                    )
+                  )
+                }
+                sam(
+                  model   = mods1,
+                  data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                  # Local method sets factor covariances equal (lavaan v0.7-2).
+                  # Likely a bug.
+                  # Parameter estimates with the global method match Burt's
+                  # method exactly for CFA models.
+                  sam_method = "global",
+                  missing = miss,
+                  std.lv  = std.lv,
+                  rotation = "target",
+                  rotation.args = list(
+                    rstarts = 30, row.weights = "none", algorithm = "gpa",
+                    std.ov = TRUE, target = target, orthogonal = orthogonal
+                  )
                 )
-              )
+              } else {
+                if (ord_k[1] != "NULL") {
+                  warning(
+                    paste(
+                      "The SAM method, used to estimate the latent variable",
+                      "model you are attempting to run, does not support",
+                      "'ordered' variables in ESEM.",
+                      "Therefore, the model will be run as though",
+                      "'ordered = NULL'."
+                    )
+                  )
+                }
+                sam(
+                  model   = mods1,
+                  data    = data[c(keys_s[[n_mod]], unlist(keys_e))],
+                  mm_args = list(estimator = est),
+                  struc_args = list(estimator = est),
+                  # Local method sets factor covariances equal (lavaan v0.7-2).
+                  # Likely a bug.
+                  # Parameter estimates with the global method match Burt's
+                  # method exactly.
+                  sam_method = "global",
+                  missing = miss,
+                  estimator = est,
+                  std.lv  = std.lv,
+                  rotation = "target",
+                  rotation.args = list(
+                    rstarts = 30, row.weights = "none", algorithm = "gpa",
+                    std.ov = TRUE, target = target, orthogonal = orthogonal
+                  )
+                )
+              }
             }
           }
         }
@@ -530,6 +722,7 @@ sem.check <- function(
       n_mod = names(mods),
       ft = fit_type,
       n = seq_along(mods),
+      ord_k = ordered_key,
       SIMPLIFY = FALSE
     )
   )

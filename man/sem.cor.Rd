@@ -14,7 +14,7 @@ sem.cor(
   nagy = TRUE,
   fit_save = FALSE,
   fit_measures = "all",
-  miss = "ML",
+  miss = "default",
   est = "default",
   name = "cors",
   check = FALSE,
@@ -30,7 +30,7 @@ Data must include all observed variables used in any of the models.}
 \item{fit_x}{A named list of CFA fitted objects to be correlated with fit_y variables
 or 'NULL'.}
 
-\item{items}{A vector of single-item variables to correlate with 'fit_y' latent variables.
+\item{items}{A vector of single-item variables to correlate with \code{fit_y} latent variables.
 Must not include any items contributing to the measurement of a \code{fit_y}
 latent variable.}
 
@@ -54,16 +54,17 @@ Fit can still be examined for individual models with,
 \verb{lavaan::fitMeasures(fit$fit$[model name])}.}
 
 \item{fit_measures}{A vector of fit measures to save or 'all' to select all fit measures,
-as per the \code{fit.measures} parameter from lavaan's \code{\link[lavaan:fitMeasures]{lavaan::fitMeasures()}}
+as per the \code{fit.measures} parameter from lavaan's \link[lavaan:fitMeasures]{lavaan::fitMeasures}
 function.
 Defaults to 'all'. Irrelevant if \code{fit_save = FALSE}.}
 
 \item{miss}{A string.
-Sets the \code{missing} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
-Defaults to 'ML'.}
+Sets the \code{missing} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
+Defaults to 'default', which uses 'ML' for \code{ordered = NULL} and 'pairwise'
+for any other value of \code{ordered}.}
 
 \item{est}{A string.
-Sets the \code{estimator} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
+Sets the \code{estimator} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
 The default ('default') uses the lavaan default for the model being run.}
 
 \item{name}{A string indicating a subdirectory where model outputs will be saved when
@@ -88,36 +89,35 @@ time if \code{check = TRUE} the next time the code is run and nothing has change
 in the meantime.}
 }
 \value{
-Returns a list of length 4.
-The first element is the fitted lavaan models ('fit').
-The second element is the correlation matrix ('cor_mat').
-The third and fourth elements are the upper and lower confidence intervals
-from the models ('ci_lower' and 'ci_upper', respectively).
+Returns a list of length 3-8 depending on option selections.
+All versions include fitted lavaan models ('fit');
+a correlation matrix ('cor_mat'); and
+a list of upper and lower 95\% confidence intervals of the correlations.
+If \code{fit_save = TRUE}, a list of fit measures is also returned, and,
+if \code{nagy = TRUE}, matrices of residual correlations and lists of their 95\%
+confidence intervals are also returned.
 }
 \description{
-sem.cor takes CFA outputs and produces a correlation matrix between latent
-variables and/or single items.
+\code{sem.cor} takes CFA outputs and produces a correlation matrix between latent
+variables.
 }
 \details{
 The function computes correlations between latent variables from fitted CFA
 models, including either all latent variables, or between two sets of latent
 variables.
-To compute a full correlation matrix include all CFA models in a list as
-\code{fit_y}, alternatively,
-to correlate a set of dependant variables with a set of independent
-variables,
-set \code{fit_y} as a list of fitted CFA models of dependant variables and
-set \code{fit_x} as a list of fitted CFA models of independent variables.
-Correlations between the \code{fit_y} latent variables and single items can also
-be optionally included by setting \code{items} as a vector of item names.
-In this case, items will be treated as single item latent variables with
-reliability = \code{item_loadings}.
+If both \code{fit_x = NULL} and \code{items = NULL}, then correlations between all
+\code{fit_y} latent variables are computed. If either \code{fit_x} or \code{items}
+are specified, then correlations will be computed between \code{fit_y} latent
+variables and any specified \code{fit_x} latent variables and \code{items}.
+Items are treated as single item latent variables with loadings of
+\code{item_loadings} if specified or freely estimated otherwise (equivalent to
+correlations with the items themselves).
 
 Each correlation is calculated in a separate model.
 This approach saves time for longer lists of variables compared to including
-everything in one model and
-it also means that excluding a variable cannot change correlations between
-other variables (which is possible when all are included together).
+everything in one model and it also means that excluding a variable cannot
+change correlations between other variables (which is possible when all are
+included together).
 The function uses either Burt's 2-stage procedure when \code{nagy = FALSE} or
 Nagy and colleagues' (2017) extension procedure when \code{nagy = TRUE}
 to control for interpretational confounding (Burt, 1976).
@@ -125,23 +125,34 @@ to control for interpretational confounding (Burt, 1976).
 Burt's method works by fixing measurement model parameters in the model
 estimating structural parameters.
 This method means that less than ideal fit at the measurement level does not
-propagate though the model as the measurement parameters are fixed.
+latent variable correlations as the measurement parameters are fixed.
 It also means that the latent variables interpretation cannot change with the
-addition of different variables,
-thereby solving interpretational confounding.
-However, it is not a perfect solution because it underestimates uncertainty
-in the measurement part of the structural model (e.g., Nagy et al., 2017),
-which results in biased standard errors and fit statistics.
+addition of different variables, thereby solving interpretational
+confounding.
+However, it underestimates uncertainty in the measurement part of the
+structural model (e.g., Nagy et al., 2017), which results in biased standard
+errors and fit statistics.
 
 Alternatively, Nagy's method involves allowing item residuals to correlate
 with external variables (or factors) and constrains those relationships
 such that the model is identifiable.
-If the sums of squares of correlations between all combinations of factors'
-items and external factors are minimised,
-measurement parameters in the structural model match those of isolated
-measurement models without having to constrain them directly.
+Specifically, for a standard two latent variable model, the sum of squares of
+the correlations between the first latent variable's items' residuals and the
+second latent variable is minimised, and the sum of squares of the
+correlations between the second latent variable's items' residuals and the
+first latent variable is minimised.
+When a model includes a single latent variable and an item, the sum of
+squares of the correlations between the latent variable's items' residuals
+and the item's latent variable is minimised.
+By using this method, measurement parameters in the structural model match
+those of isolated measurement models without having to constrain them
+directly.
 As a result, unbiased standard errors are preserved while simultaneously
 eliminating interpretational confounding.
+
+If Nagy and colleagues' (2017) method is selected, correlations between
+factors and item residuals will be included in the output and may provide
+useful insight into idiosyncratic item variance (Nagy et al., 2017).
 
 Burt's method is faster but artificially constrains parameters,
 thereby biasing standard errors and model fit indices.
@@ -152,24 +163,23 @@ or model fit matter, except for extremely large sets of variables.
 It is possible for latent variable correlations to produce a non-positive
 definite correlation matrix between variables included in \code{fit_y},
 especially when closely related factors are included.
-If the matrix of latent variables is not positive definite,
-then the matrix will be adjusted to the nearest positive definite
-matrix using the \code{\link[Matrix:nearPD]{Matrix::nearPD()}} function,
-which employs the method developed by Higham (2002),
-and a message will state that the matrix was adjusted and the maximum
+If the matrix of latent variables is not positive definite, then the matrix
+will be adjusted to the nearest positive definite matrix using the
+\link[Matrix:nearPD]{Matrix::nearPD} function, which employs the method developed by Higham
+(2002), and a message will state that the matrix was adjusted and the maximum
 adjustment to any cell.
 Confidence intervals will be adjusted by the same amount.
 
-The model relies on \code{\link[=sem.check]{sem.check()}} for the back-end of running the models,
+The model relies on \link{sem.check} for the back-end of running the models,
 which enables saving inputs and outputs from model runs
 (with \code{save_out = TRUE}) and checking to see if anything has changed from
 prior runs before running again (with \code{check = TRUE}).
 The functionality was included for a number of very slow models or a lot of
 faster models, such that time spent rerunning them would be onerous.
-In the case of \code{sem.cor()}, the number of correlations can add up quickly,
+In the case of \code{sem.cor}, the number of correlations can add up quickly,
 so the functionality may be useful
 (e.g., with 20 scales, there are 19 + 18 + 17 + ... + 1 = 190 correlations).
-For further details on how this works, see the \code{\link[=sem.check]{sem.check()}} function
+For further details on how this works, see the \link{sem.check} function
 documentation.
 }
 \examples{
@@ -207,14 +217,10 @@ https://doi.org/10.1093/imanum/22.3.329.
 
 Nagy, G., Brunner, M., Lüdtke, O., and Greiff, S. (2017).
 Extension Procedures for Confirmatory Factor Analysis.
-Journal of Experimental Education, 85(4).
+Journal of Experimental Education, 85(4), 574-596.
 https://doi.org/10.1080/00220973.2016.1260524.
 }
 \seealso{
-\code{\link[=sem.check]{sem.check()}}, which \code{sem.cor()} uses for all the back-end;
-\code{\link[lavaan:sem]{lavaan::sem()}}, which is used to estimate the models;
-\link[matrixcalc:is.positive.definite]{matrixcalc::is.positive.definite}, which is used to assess whether the
-correlation matrix between \code{fit_y} constructs is positive definite; and
-\code{\link[Matrix:nearPD]{Matrix::nearPD()}} for the function used to transform non-positive definite
-matrices into positive definite matrices.
+\link{sem.check}, \link[lavaan:sem]{lavaan::sem}, \link[matrixcalc:is.positive.definite]{matrixcalc::is.positive.definite},
+\link[Matrix:nearPD]{Matrix::nearPD}
 }

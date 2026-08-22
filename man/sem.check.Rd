@@ -11,15 +11,17 @@ sem.check(
   keys_e = NULL,
   fit_save = FALSE,
   fit_measures = "all",
-  miss = "ML",
+  miss = "default",
   est = "default",
   std.lv = FALSE,
   std = TRUE,
+  ordered = NULL,
   orthogonal = FALSE,
   target = NULL,
   name = "sem",
   check = FALSE,
-  save_out = FALSE
+  save_out = FALSE,
+  use_sam = FALSE
 )
 }
 \arguments{
@@ -41,20 +43,21 @@ Fit can still be examined for individual models with,
 \verb{lavaan::fitMeasures(fit$fit$[model name])}.}
 
 \item{fit_measures}{A vector of fit measures to save or 'all' to select all fit measures,
-as per the \code{fit.measures} parameter from lavaan's \code{\link[lavaan:fitMeasures]{lavaan::fitMeasures()}}
+as per the \code{fit.measures} parameter from lavaan's \link[lavaan:fitMeasures]{lavaan::fitMeasures}
 function.
 Defaults to 'all'. Irrelevant if \code{fit_save = FALSE}.}
 
 \item{miss}{A string.
-Sets the \code{missing} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
-Defaults to 'ML'.}
+Sets the \code{missing} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
+Defaults to 'default', which uses 'ML' for \code{ordered = NULL} and 'pairwise'
+for any other value of \code{ordered}.}
 
 \item{est}{A string.
-Sets the \code{estimator} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
+Sets the \code{estimator} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
 The default ('default') uses the lavaan default for the model being run.}
 
 \item{std.lv}{Logical.
-Sets the \code{std.lv} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
+Sets the \code{std.lv} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
 \code{TRUE} indicates that factor variances should be fixed to 1.
 \code{FALSE} indicates that loadings of the first items of factors should be fixed
 to 1.
@@ -64,8 +67,14 @@ Defaults to \code{FALSE}.}
 \code{TRUE} indicates that standardised parameter estimates should be saved;
 \code{FALSE} indicates that unstandardised parameters estimates should be saved.}
 
+\item{ordered}{A character vector or \code{NULL}, as per the \code{ordered} lavaan argument of the
+same name (see, e.g., \link[lavaan:sem]{lavaan::sem}).
+\code{NULL} indicates that all variables should be treated as continuous.
+Otherwise, variables matching an element of the vector will be treated as
+continuous. Defaults to \code{NULL}.}
+
 \item{orthogonal}{Logical.
-Sets the \code{orthogonal} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
+Sets the \code{orthogonal} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
 \code{TRUE} indicates that unspecified latent variable correlations should be
 fixed at 0;
 \code{FALSE} indicates that unspecified latent variable correlations should be
@@ -73,7 +82,7 @@ freely estimated.
 Defaults to \code{FALSE}.}
 
 \item{target}{A matrix indicating a rotation target,
-as used in the \code{rotation.args} argument in lavaan (see \code{\link[lavaan:efa]{lavaan::efa()}}.
+as used in the \code{rotation.args} argument in lavaan (see \link[lavaan:efa]{lavaan::efa}).
 If \code{NULL} (default),
 target is not specified and lavaan uses default behaviour.
 Irrelevant when the model does not include an EFA or ESEM.}
@@ -97,6 +106,12 @@ parameter values, and output will be saved;
 Selecting \code{save_out = TRUE} enables the function to not rerun models next
 time if \code{check = TRUE} the next time the code is run and nothing has changed
 in the meantime.}
+
+\item{use_sam}{Logical.
+\code{TRUE} indicates that the \link[lavaan:sam]{lavaan::sam} function should be used for model
+estimation.
+\code{FALSE} indicates that the \link[lavaan:sem]{lavaan::sem} function should be used for model
+estimation.}
 }
 \value{
 Returns a list of length 2 (if \code{fit_save = FALSE}) or
@@ -121,15 +136,14 @@ then the models are run as normal.
 }
 \details{
 The function is largely intended to be used as a helper function to upstream
-functions,
-including \code{\link[=cfa.from.keys]{cfa.from.keys()}}, \code{\link[=bifactor.from.keys]{bifactor.from.keys()}}, \code{\link[=efa.from.keys]{efa.from.keys()}}, and
-\code{\link[=esem.from.mods]{esem.from.mods()}}.
+functions, including \link{cfa.from.keys}, \link{bifactor.from.keys},
+\link{efa.from.keys}, and \link{esem.from.keys}, among others.
 Although it is recommended to use the appropriate upstream function whenever
-possible,
-there are not (currently) options to do so when customised lavaan models are
-required;
+possible, there are not (currently) options to do so when customised lavaan
+models are required (with the exception of the \code{extra} argument in
+\link{sem.path};
 for example, when allowing two items' residuals to correlate in a CFA.
-\code{sem.check()} can be used in these cases (see example).
+\code{sem.check} can be used in these cases (see example).
 
 Matching the philosophy of the package, the function is designed to run for
 multiple models with a similar design. If you are using the function for a
@@ -151,16 +165,16 @@ will trigger all models to be re-run.
 
 For either \code{save_out = TRUE} or \code{check = TRUE},
 the function will look for a cache directory set and created by the
-\code{\link[=cache.setup]{cache.setup()}} function.
+\link{cache.setup} function.
 If a cache directory has not been set for the current session,
 then the function will exit with an error suggesting that either
-\code{\link[=cache.setup]{cache.setup()}} be run or \code{save_out} and \code{check} set to \code{FALSE}.
+\link{cache.setup} be run or \code{save_out} and \code{check} set to \code{FALSE}.
 
 When the cache directory is found and output from previous runs are detected,
 the comparisons performed are for:
 \itemize{
 \item model code;
-\item hashes of the data (using \code{\link[openssl:md5]{openssl::md5()}});
+\item hashes of the data (using \link[openssl:md5]{openssl::md5});
 \item values of the \code{miss}, \code{est}, \code{std}, \code{std.lv}, and \code{orthogonal}parameters;
 \item the class of model objects (i.e., class lavaan); and,
 \item the class of parameter estimates (i.e., class lavaan.data.frame).
@@ -189,10 +203,9 @@ mods[[1]] <- paste0(mods[[1]], "\ngrit_c_1 ~~ grit_c_2")
 cfa_fit <- sem.check(mods, BFIGritHope, keys, name = "cfa", check = FALSE)
 }
 \seealso{
-\code{\link[=cfa.from.keys]{cfa.from.keys()}}, \code{\link[=efa.from.keys]{efa.from.keys()}}, \code{\link[=bifactor.from.keys]{bifactor.from.keys()}}, and
-\code{\link[=esem.from.mods]{esem.from.mods()}}---all these function depend upon \code{sem.check()} to work;
-\code{\link[lavaan:sem]{lavaan::sem()}}, which is used to estimate the models;
-\code{\link[lavaan:parameterEstimates]{lavaan::parameterEstimates()}}, which is used to estimate parameter values;
-and \code{\link[lavaan:fitMeasures]{lavaan::fitMeasures()}}, which is used to estimate fit statistics when
-\code{fit_save = TRUE}.
+\link{cfa.from.keys}, \link{efa.from.keys}, \link{bifactor.from.keys}, \link{esem.from.mods},
+\link{esem.from.keys}, \link{sem.cor}, \link{sem.path}, \link{cache.setup}, \link[lavaan:sem]{lavaan::sem},
+\link[lavaan:sam]{lavaan::sam}, \link[lavaan:efa]{lavaan::efa}, \link[lavaan:parameterEstimates]{lavaan::parameterEstimates},
+\link[lavaan:standardizedSolution]{lavaan::standardizedSolution}, \link[lavaan:fitMeasures]{lavaan::fitMeasures}, \link[openssl:md5]{openssl::md5},
+\link[lavaan:lavOptions]{lavaan::lavOptions}
 }

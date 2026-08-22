@@ -10,8 +10,9 @@ cfa.from.keys(
   fit_save = TRUE,
   fit_measures = "all",
   std.lv = TRUE,
-  miss = "ML",
+  miss = "default",
   est = "default",
+  ordered = NULL,
   name = "cfa",
   check = FALSE,
   save_out = FALSE
@@ -34,24 +35,31 @@ Fit can still be examined for individual models with,
 \verb{lavaan::fitMeasures(fit$fit$[model name])}.}
 
 \item{fit_measures}{A vector of fit measures to save or 'all' to select all fit measures,
-as per the \code{fit.measures} parameter from lavaan's \code{\link[lavaan:fitMeasures]{lavaan::fitMeasures()}}
+as per the \code{fit.measures} parameter from lavaan's \link[lavaan:fitMeasures]{lavaan::fitMeasures}
 function.
 Defaults to 'all'. Irrelevant if \code{fit_save = FALSE}.}
 
 \item{std.lv}{Logical.
-Sets the \code{std.lv} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
+Sets the \code{std.lv} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
 \code{TRUE} indicates that factor variances should be fixed to 1.
 \code{FALSE} indicates that loadings of the first items of factors should be fixed
 to 1.
 Defaults to \code{TRUE}.}
 
 \item{miss}{A string.
-Sets the \code{missing} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
-Defaults to 'ML'.}
+Sets the \code{missing} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
+Defaults to 'default', which uses 'ML' for \code{ordered = NULL} and 'pairwise'
+for any other value of \code{ordered}.}
 
 \item{est}{A string.
-Sets the \code{estimator} parameter, as per lavaan (see \code{\link[lavaan:lavOptions]{lavaan::lavOptions()}}).
+Sets the \code{estimator} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
 The default ('default') uses the lavaan default for the model being run.}
+
+\item{ordered}{A character vector or \code{NULL}, as per the \code{ordered} lavaan argument of the
+same name (see, e.g., \link[lavaan:sem]{lavaan::sem}).
+\code{NULL} indicates that all variables should be treated as continuous.
+Otherwise, variables matching an element of the vector will be treated as
+continuous. Defaults to \code{NULL}.}
 
 \item{name}{A string indicating a subdirectory where model outputs will be saved when
 \code{save_out = TRUE} and checked against when \code{check = TRUE}.
@@ -89,13 +97,13 @@ designed to streamline running CFA models for all scales in a sample and to
 input model outputs into downstream functions.
 }
 \details{
-The model relies on \code{\link[=sem.check]{sem.check()}} for the back-end of running the models.
+The model relies on \link{sem.check} for the back-end of running the models.
 This enables saving inputs and outputs from model runs
 (with \code{save_out = TRUE}) and checking to see if anything has changed from
 prior runs before running again (with \code{check = TRUE}).
 The functionality was included for a number of very slow models or a lot of
 faster models, such that time spent rerunning them would be onerous.
-For further details on how this works, see the \code{\link[=sem.check]{sem.check()}} function
+For further details on how this works, see the \link{sem.check} function
 documentation.
 
 The function does not provide any warnings for poor fit beyond those provided
@@ -120,6 +128,5 @@ summary(cfa_fit$fit$grit_c)                # Standard lavaan summary
 cfa_fit$fit_measures[, c("cfi", "rmsea")]  # Fit measures
 }
 \seealso{
-\code{\link[=sem.check]{sem.check()}}, which \code{cfa.from.keys()} uses for all the back-end, and
-\code{\link[lavaan:sem]{lavaan::sem()}}, which is used to estimate the models.
+\link{sem.check}, \link[lavaan:sem]{lavaan::sem}
 }

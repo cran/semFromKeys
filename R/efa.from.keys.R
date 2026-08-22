@@ -18,7 +18,7 @@
 #' The name should be unique for each set of models, or outputs from calls with
 #' the same name will be overwritten.
 #' @param std.lv
-#' Sets the `std.lv` param, as per lavaan (see [lavaan::lavOptions()]).
+#' Sets the `std.lv` param, as per lavaan (see [lavaan::lavOptions]).
 #' Defaults to `TRUE`.
 #'
 #' @return
@@ -38,18 +38,17 @@
 #' such that a target is always reasonable.
 #' The function does not currently support untargeted rotations.
 #'
-#' The model relies on [sem.check()] for the back-end of running the models.
+#' The model relies on [sem.check] for the back-end of running the models.
 #' This enables saving inputs and outputs from model runs
 #' (with `save_out = TRUE`) and checking to see if anything has changed from
 #' prior runs before running again (with `check = TRUE`).
 #' The functionality was included for a number of very slow models or a lot of
 #' faster models, such that time spent rerunning them would be onerous.
-#' For further details on how this works, see the [sem.check()] function
+#' For further details on how this works, see the [sem.check] function
 #' documentation.
 #'
 #' @seealso
-#' [sem.check()], which `efa.from.keys()` uses for all the back-end, and
-#' [lavaan::sem()], which is used to estimate the models.
+#' [sem.check], [lavaan::sem]
 #'
 #' @references
 #' Burt, R. S. (1976).
@@ -74,15 +73,18 @@
 #'   },
 #'   simplify = FALSE
 #' )
-#' # Run model
-#' efa_fit <- efa.from.keys(keys_e, BFIGritHope, check = FALSE, fit_save = TRUE)
+#' # Run model with selected fit measures.
+#' efa_fit <- efa.from.keys(
+#'   keys_e, BFIGritHope, check = FALSE,
+#'   fit_save = TRUE, fit_measures = c("chisq", "df", "pvalue")
+#' )
 #' # Examine results
-#' summary(efa_fit$fit$efa)                   # Standard lavaan summary
-#' efa_fit$fit_measures[, c("cfi", "rmsea")]  # Fit measures
+#' summary(efa_fit$fit)    # Standard lavaan summary
+#' efa_fit$fit_measures    # Selected fit measures
 
 efa.from.keys <- function(
     keys, data, orthogonal = FALSE, fit_save = TRUE, fit_measures = "all",
-    std.lv = TRUE, miss = "ML", est = "default",
+    std.lv = TRUE, miss = "default", est = "default", ordered = NULL,
     name = "efa", check = FALSE, save_out = FALSE
 ) {
   target <- sapply(keys, function(y) ifelse(!unlist(keys) %in% y, 0, NA))
@@ -96,7 +98,7 @@ efa.from.keys <- function(
     )
   )
   names(mod) <- name
-  sem.check(
+  fit <- sem.check(
     mod,
     data,
     name = name,
@@ -110,7 +112,11 @@ efa.from.keys <- function(
     target = target,
     miss = miss,
     est = est,
+    ordered = ordered,
     check = check,
     save_out = save_out
   )
+  fit$fit <- fit$fit$efa
+  fit$par <- fit$par$efa
+  return(fit)
 }

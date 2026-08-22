@@ -1,11 +1,11 @@
 test_that(
   "Test normal behaviour when fit_save = FALSE",
   {
-    efa_fit <- efa.from.keys(keys_e, BFIGritHope, check = FALSE, fit_save = FALSE)
+    efa_fit <-
+      efa.from.keys(keys_e, BFIGritHope, check = FALSE, fit_save = FALSE)
     expect_equal(length(efa_fit), 2)
-    expect_equal(length(efa_fit$fit), 1)
-    expect_equal(length(efa_fit$par), 1)
-    expect_equal(sum(sapply(efa_fit$fit, function(x) class(x) != "lavaan")), 0)
+    expect_true(inherits(efa_fit$par, "lavaan.data.frame"))
+    expect_true(inherits(efa_fit$fit, "lavaan"))
   }
 )
 test_that(
@@ -15,20 +15,19 @@ test_that(
       keys_e, BFIGritHope, check = FALSE, fit_save = FALSE, orthogonal = TRUE
     )
     expect_equal(length(efa_fit), 2)
-    expect_equal(length(efa_fit$fit), 1)
-    expect_equal(length(efa_fit$par), 1)
-    expect_equal(sum(sapply(efa_fit$fit, function(x) class(x) != "lavaan")), 0)
+    expect_true(inherits(efa_fit$par, "lavaan.data.frame"))
+    expect_true(inherits(efa_fit$fit, "lavaan"))
     # Check orthogonal
     expect_equal(
       sum(
         abs(
-          efa_fit$par$efa$est[
+          efa_fit$par$est[
             grepl(
               paste0("^", names(keys_e), "$", collapse = "|"),
-              efa_fit$par$efa$lhs
+              efa_fit$par$lhs
             ) &
-              efa_fit$par$efa$op == "~~" &
-              efa_fit$par$efa$lhs != efa_fit$par$efa$rhs
+              efa_fit$par$op == "~~" &
+              efa_fit$par$lhs != efa_fit$par$rhs
           ] > 10e-10
         )
       ),
@@ -43,9 +42,8 @@ test_that(
       keys_e, BFIGritHope, check = FALSE, fit_save = TRUE
     )
     expect_equal(length(efa_fit), 3)
-    expect_equal(length(efa_fit$fit), 1)
-    expect_equal(length(efa_fit$par), 1)
-    expect_equal(sum(sapply(efa_fit$fit, function(x) class(x) != "lavaan")), 0)
+    expect_true(inherits(efa_fit$par, "lavaan.data.frame"))
+    expect_true(inherits(efa_fit$fit, "lavaan"))
   }
 )
 
@@ -57,7 +55,7 @@ test_that(
     keys_mistake$bfi_e[1] <- "mistake"
     expect_error(
       efa.from.keys(keys_mistake, BFIGritHope, check = FALSE, fit_save = FALSE),
-      "items are in 'keys_e' but they are not in 'data'"
+      "items are in a key but they are not in 'data'"
     )
     expect_error(
       efa.from.keys(keys_e$bfi_e, BFIGritHope, check = FALSE, fit_save = FALSE),
@@ -127,5 +125,16 @@ test_that(
       ),
       "1 / \\d"
     )
+  }
+)
+test_that(
+  "Test ordered",
+  {
+    efa_fit <- efa.from.keys(
+      keys_e, BFIGritHope, fit_save = FALSE, ordered = names(BFIGritHope)
+    )
+    expect_equal(length(efa_fit), 2)
+    expect_true(inherits(efa_fit$par, "lavaan.data.frame"))
+    expect_true(inherits(efa_fit$fit, "lavaan"))
   }
 )

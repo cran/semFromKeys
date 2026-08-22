@@ -96,7 +96,7 @@ test_that(
     keys_mistake$grit_c[1] <- "mistake"
     expect_error(
       cfa.from.keys(keys_mistake, BFIGritHope, fit_save = FALSE),
-      "items are in 'keys_s' but they are not in 'data'"
+      "items are in a key but they are not in 'data'"
     )
   }
 )
@@ -211,7 +211,7 @@ test_that(
     )
     expect_error(
       cfa.from.keys(keys, data = "cfa", fit_save = FALSE),
-      "items are in 'keys_s' but they are not in 'data'"
+      "items are in a key but they are not in 'data'"
     )
   }
 )
@@ -465,6 +465,19 @@ test_that(
     cache.clean(0, interactive = FALSE)
     expect_equal(
       length(list.files(cache_dir, full.names = TRUE, recursive = TRUE)), 0
+    )
+  }
+)
+test_that(
+  "Test ordered",
+  {
+    cfa_fit <-
+      cfa.from.keys(keys, BFIGritHope, fit_save = FALSE, ordered = names(data))
+    expect_equal(length(cfa_fit), 2)
+    expect_equal(length(cfa_fit$fit), length(keys))
+    expect_equal(length(cfa_fit$par), length(keys))
+    expect_equal(
+      sum(sapply(cfa_fit$fit, function(x) !inherits(x, "lavaan"))), 0
     )
   }
 )
