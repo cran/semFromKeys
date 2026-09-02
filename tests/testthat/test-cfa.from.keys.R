@@ -241,18 +241,7 @@ test_that(
       message = "\\d / \\d"
     )
     expect_identical(check_fit, check_fit2)
-  }
-)
-test_that(
-  "Cache location invalid",
-  {
-    expect_error(
-      cache.setup(c("tests/testthat/cache", "tests/testhtat/invalid")),
-      "the condition has length > 1"
-    )
-    expect_error(
-      cache.setup(42), "'location' is not a length 1 character vector"
-    )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -283,6 +272,7 @@ test_that(
       ),
       message = "([1-2]|4) / \\d"
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -302,6 +292,7 @@ test_that(
     expect_all_true(
       c(ncol(check_fit$fit_measures) == 3, ncol(check_fit2$fit_measures) >= 55)
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 # This is treated slightly differently to the above in sem.check
@@ -321,6 +312,7 @@ test_that(
       ),
       "1 / \\d"
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -351,6 +343,7 @@ test_that(
       ),
       message = "([1-2]|4) / \\d"
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -367,6 +360,7 @@ test_that(
       ),
       "1 / \\d"
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -383,6 +377,7 @@ test_that(
       ),
       "1 / \\d"
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -399,6 +394,7 @@ test_that(
       ),
       "1 / \\d"
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -418,6 +414,7 @@ test_that(
     expect_all_true(
       c(ncol(check_fit$fit_measures) >= 55, ncol(check_fit2$fit_measures) == 3)
     )
+    cache.clean(0, interactive = FALSE)
   }
 )
 test_that(
@@ -442,30 +439,7 @@ test_that(
       ),
       "4 / \\d"
     )
-  }
-)
-test_that(
-  "Test deleting of cache files",
-  {
-    cache_dir <- cache.setup("tests/testthat/cache", interactive = FALSE)
-    name <- "cfa"
-    cfa.from.keys(
-      keys, BFIGritHope, check = TRUE, save_out = TRUE, fit_save = TRUE,
-      name = name
-    )
-    expect_all_true(
-      c(
-        file.exists(file.path(cache_dir, name, paste0(name, "_fit.rds"))),
-        file.exists(file.path(cache_dir, name, paste0(name, "_par.rds"))),
-        file.exists(file.path(cache_dir, name, paste0(name, "_fit_m.rds"))),
-        file.exists(file.path(cache_dir, name, paste0(name, "_mod.rds"))),
-        file.exists(file.path(cache_dir, name, paste0(name, "_hash.rds")))
-      )
-    )
     cache.clean(0, interactive = FALSE)
-    expect_equal(
-      length(list.files(cache_dir, full.names = TRUE, recursive = TRUE)), 0
-    )
   }
 )
 test_that(
@@ -479,5 +453,21 @@ test_that(
     expect_equal(
       sum(sapply(cfa_fit$fit, function(x) !inherits(x, "lavaan"))), 0
     )
+  }
+)
+test_that(
+  "'save_out = TRUE', 'check = FALSE'",
+  {
+    cache.setup("tests/testthat/cache", interactive = FALSE)
+    expect_no_error(cfa.from.keys(keys[1:2], BFIGritHope, save_out = TRUE))
+    cache.clean(0, interactive = FALSE)
+  }
+)
+test_that(
+  "'save_out = FALSE', 'check = TRUE'",
+  {
+    cache.setup("tests/testthat/cache", interactive = FALSE)
+    expect_no_error(cfa.from.keys(keys[1:2], BFIGritHope, check = TRUE))
+    cache.clean(0, interactive = FALSE)
   }
 )

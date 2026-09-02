@@ -7,7 +7,7 @@ test_that(
   }
 )
 test_that(
-  "Test 'older_than' not set with cache.setup",
+  "'older_than' and 'name' not set",
   {
     cache.setup("tests/testthat/cache", interactive = FALSE)
     expect_error(
@@ -20,5 +20,89 @@ test_that(
   {
     cache.setup("tests/testthat/cache", interactive = FALSE)
     expect_message(cache.clean(0, interactive = FALSE), "No files to delete")
+  }
+)
+if (!interactive()) {  # Does not do anything if run interactively
+  test_that(
+    "'Interactive = TRUE' in non-interactive session",
+    {
+      cache.setup("tests/testthat/cache", interactive = FALSE)
+      cfa.from.keys(keys[1], BFIGritHope, save_out = TRUE)
+      expect_error(
+        cache.clean(0, interactive = TRUE),
+        "Running 'cache.clean' in a non-interactive session"
+      )
+      # Actually clean the cache
+      cache.clean(0, interactive = FALSE)
+    }
+  )
+}
+test_that(
+  "Test deletion messages",
+  {
+    cache.setup("tests/testthat/cache", interactive = FALSE)
+    invisible(cfa.from.keys(keys[1], BFIGritHope, save_out = TRUE))
+    expect_message(
+      cache.clean(0, interactive = FALSE), "Deleted 6 file"
+    )
+  }
+)
+test_that(
+  "Test file matching by name",
+  {
+    cache.setup("tests/testthat/cache", interactive = FALSE)
+    invisible(cfa.from.keys(keys[1], BFIGritHope, save_out = TRUE))
+    expect_message(
+      cache.clean(name = "cfa", interactive = FALSE), "Deleted 6 file"
+    )
+    cache.setup("tests/testthat/cache", interactive = FALSE)
+    invisible(cfa.from.keys(keys[1], BFIGritHope, save_out = TRUE))
+    expect_message(
+      cache.clean(name = "cfa", interactive = FALSE),
+      "Deleted 1 empty directories"
+    )
+    cache.setup("tests/testthat/cache", interactive = FALSE)
+    invisible(cfa.from.keys(keys[1], BFIGritHope, save_out = TRUE))
+    expect_message(
+      cache.clean(name = "cfa", interactive = FALSE),
+      "The cache directory.*has been deleted.\nTo use"
+    )
+  }
+)
+test_that(
+  "Tests of non-overlapping name and older_than",
+  {
+    cache.setup("tests/testthat/cache", interactive = FALSE)
+    invisible(cfa.from.keys(keys[1], BFIGritHope, save_out = TRUE))
+    expect_message(
+      cache.clean(1, name = "cfa", interactive = FALSE), "No files to delete"
+    )
+    expect_message(
+      cache.clean(0, name = "hello", interactive = FALSE), "No files to delete"
+    )
+    # Actually delete the cache
+    cache.clean(0, interactive = FALSE)
+  }
+)
+test_that(
+  "Test deleting of cache files",
+  {
+    cache_dir <- cache.setup("tests/testthat/cache", interactive = FALSE)
+    name <- "cfa"
+    invisible(cfa.from.keys(
+      keys, BFIGritHope, check = TRUE, save_out = TRUE, fit_save = TRUE,
+      name = name
+    ))
+    expect_all_true(
+      c(
+        file.exists(file.path(cache_dir, name, paste0(name, "_fit.rds"))),
+        file.exists(file.path(cache_dir, name, paste0(name, "_par.rds"))),
+        file.exists(file.path(cache_dir, name, paste0(name, "_fit_m.rds"))),
+        file.exists(file.path(cache_dir, name, paste0(name, "_mod.rds"))),
+        file.exists(file.path(cache_dir, name, paste0(name, "_hash.rds")))
+      )
+    )
+    cache.clean(0, interactive = FALSE)
+    expect_false(dir.exists("tests/testthat/cache"))
   }
 )

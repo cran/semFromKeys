@@ -14,15 +14,15 @@
 #' If any other string is used a folder will be created within either the
 #' [getwd] directory or,
 #' if available, within the directory identified by [here::here].
-#' If using an RStudio project, these will create the directory in the
-#' project directory.
+#' @param projectname
+#' The project name to use or `NULL` for auto-detection.
+#' Only relevant if `location = "user"`.
 #' @param interactive
 #' Logical.
 #' `TRUE` indicates that confirmation will be required before a cache directory
 #' is set *if* the default location is not used.
 #' `FALSE` indicates that a cache directory will be set without confirmation.
 #' Irrelevant if `location = "user"`.
-#' It is recommended to use `TRUE`.
 #' Defaults to `TRUE`.
 #'
 #' @return
@@ -35,42 +35,35 @@
 #' To avoid writing to your computer without your permission,
 #' you are required to run this function first to ensure that you know *that*
 #' files are being saved and *where* files are being saved.
-#' The function temporarily sets a hidden environment variable '.cache_env'
-#' (with, if empty,
-#' `assign(".cache_env", new.env(parent = emptyenv()), envir = parent.frame(1))`
-#' and with
-#' `assign("cache_dir", cache_dir, envir = get(".cache_env", envir = parent.frame(1)))`,
-#' if not), which will be removed whenever the environment is cleared.
+#' The function temporarily sets a hidden environment variable '.cache_env',
+#' which will be removed whenever the environment is cleared.
 #'
 #' By default, the function creates the cache directory in the standard place
-#' for the operating system being used, appended by `semFromKeys/[projectname]`,
-#' if a project is being used and the `rstudioapi` is available.
-#' If a project is not being used or the `rstudioapi` package is not available,
-#' then the relative path with be `semFromKeys`.
+#' for the operating system being used, appended by `semFromKeys/[projectname]`.
+#' By default, `projectname` will be auto-detected using the last directory from
+#' [here::here], if available, or [getwd], if not. Alternatively, `projectname`
+#' can be set manually by specifying with the `projectname` argument.
 #'
-#' In the later case, if two function calls include the same `name` assignment,
-#' then outputs from one will overwrite the other. Therefore, it is recommended
-#' to either set the cache directory to something other than the default or use
-#' the default within a project with the `rstudioapi` package installed.
-#' Obviously this latter option will likely not work outside of RStudio,
-#' so, in that case, it is recommended to use a custom location.
+#' To use a location within the current working directory structure, the
+#' desired location should be specified with the `location` argument.
+#' This will create a directory matching `location` within the current directory
+#' structure with [here::here], if available, or [getwd], if not.
+#' It is a relative path, so should not include directories above the current
+#' working directory. If `interactive = TRUE` in an interactive session, you
+#' will be asked to confirm the cache location in this case.
 #'
-#' To ensure that R knows what the cache directory is,
-#' a hidden environment variable containing the information---`.cache_env`---is
-#' saved within the working environment.
-#' Other functions from the package will look for and use `.cache_env` to
-#' identify the cache directory.
-#' As a result, whenever the working environment is cleared
-#' (e.g., upon closing RStudio) or whenever the `.cache_env` is otherwise
-#' removed,
-#' the `cache.setup` function will need to be re-run before the cache
-#' functionality will work,
-#' regardless of the status of the any recently used cache directories.
+#' To ensure that R knows what the cache directory is, a hidden environment
+#' variable containing the information---`.cache_env`---is saved within the
+#' working environment. Other functions from the package will look for and use
+#' `.cache_env` to identify the cache directory.
+#' As a result, whenever the working environment is cleared (e.g., upon closing
+#' RStudio) or whenever the `.cache_env` is otherwise removed, the `cache.setup`
+#' function will need to be re-run before the cache functionality will work,
+#' regardless of the status of any recently used cache directories.
 #'
 #' The function relies on code that was unavailable in versions of R prior to
-#' version 4.0,
-#' so anyone using an earlier version of R will either have to update R or forgo
-#' the caching functionality.
+#' version 4.0, so anyone using an earlier version of R will either have to
+#' update R or forgo the caching functionality.
 #'
 #' `semFromKeys` has no way to know what directories you have specified as the
 #' cache in the past and cannot clean up unknown former cache directories.
@@ -84,8 +77,8 @@
 #' [esem.from.keys], [sem.cor], [sem.path], and [sem.check].
 #'
 #' @seealso
-#' [cfa.from.keys], [bifactor.from.keys], [efa.from.keys], [esem.from.mods],
-#' [sem.check], [tools::R_user_dir], [here::here], [cache.clean]
+#' [cache.clean], [cfa.from.keys], [bifactor.from.keys], [efa.from.keys],
+#' [esem.from.mods], [sem.check], [tools::R_user_dir], [here::here], [getwd]
 #'
 #' @export
 #'
@@ -109,7 +102,9 @@
 #'   )
 #' }
 
-cache.setup <- function(location = "user", interactive = TRUE) {
+cache.setup <- function(
+    location = "user", projectname = NULL, interactive = TRUE
+  ) {
   if (getRversion() < "4.0") {
     stop(
       paste0(
@@ -120,34 +115,34 @@ cache.setup <- function(location = "user", interactive = TRUE) {
       )
     )
   }
+  if (!is.character(location)) {
+    stop("'location' is not a length 1 character vector")
+  }
   if (location == "user") {
-    if (!requireNamespace("rstudioapi")) {
-      cache_dir <- tools::R_user_dir("semFromKeys", which = "cache")
-    } else {
-      if (rstudioapi::isAvailable()) {
-        project <- rstudioapi::getActiveProject()
-        if (is.null(project)) {
-          cache_dir <- tools::R_user_dir("semFromKeys", which = "cache")
-        } else {
-          project <- sub(".*/", "", project)
-          cache_dir <- tools::R_user_dir(
-            paste0("semFromKeys/", project), which = "cache"
-          )
-        }
-      } else {
-        cache_dir <- tools::R_user_dir("semFromKeys", which = "cache")
+    if (!is.null(projectname)) {
+      if (!is.character(projectname) | length(projectname) != 1) {
+        stop("'projectname' is not a length 1 character vector")
       }
+      cache_dir <- tools::R_user_dir(
+        paste0("semFromKeys/", projectname), which = "cache"
+      )
+    } else {
+      if (!requireNamespace("here")) {
+        projectname <- basename(here::here())
+      } else {
+        projectname <- basename(getwd())
+      }
+      cache_dir <- tools::R_user_dir(
+        paste0("semFromKeys/", projectname), which = "cache"
+      )
     }
   } else {
-    if (!is.character(location)) {
-      stop("'location' is not a length 1 character vector")
-    }
     if (interactive & interactive()) {
       if (requireNamespace("here")) {
         message(
           paste0(
             "The cache director will be set as: '",
-            paste0(here::here(), "/", location), "'."
+            here::here(location), "'."
           )
         )
         response <- readline("Continue? (y/n): ")
@@ -155,7 +150,7 @@ cache.setup <- function(location = "user", interactive = TRUE) {
         message(
           paste0(
             "The cache director will be set as: ",
-            paste0(getwd(), "/", location), "."
+            file.path(getwd(), location), "."
           )
         )
         response <- readline("Continue? (y/n): ")
