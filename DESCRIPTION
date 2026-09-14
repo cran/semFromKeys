@@ -1,7 +1,7 @@
 Package: semFromKeys
 Type: Package
 Title: Run 'lavaan' Models from Keys Lists
-Version: 0.5.3
+Version: 0.5.5
 Authors@R: c(
     person(
       "Timothy F.", "Bainbridge",
@@ -25,13 +25,13 @@ Config/roxygen2/version: 8.1.0
 Depends: R (>= 3.6.0)
 Imports: stringr, lavaan, openssl, withr, tools, matrixcalc, Matrix,
         stats, stringr
-Suggests: testthat (>= 3.0.0), here, rstudioapi
+Suggests: testthat (>= 3.0.0), here
 Config/testthat/edition: 3
 URL: https://github.com/timbainbridge/semFromKeys
 BugReports: https://github.com/timbainbridge/semFromKeys/issues
 NeedsCompilation: no
-Packaged: 2026-09-02 01:53:52 UTC; tim
+Packaged: 2026-09-14 00:28:39 UTC; tim
 Author: Timothy F. Bainbridge [aut, cre, cph]
 Maintainer: Timothy F. Bainbridge <tfbainbridge@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-09-02 02:30:02 UTC
+Date/Publication: 2026-09-14 02:50:02 UTC

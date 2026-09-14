@@ -1,7 +1,7 @@
-e5d26743e7caef120fba5a90e87a9213 *DESCRIPTION
+f1d5f60c86b8916d96be28bd4951db36 *DESCRIPTION
 6ea92bc9c634749ea303a4976de4f102 *NAMESPACE
-9399d5da18a17ca271e63b44bc242d19 *NEWS.md
-9ccd928777f68fd892cf59c15595f79e *R/bifactor.from.keys.R
+752ab1d852d568790148bdf07da4611b *NEWS.md
+af7af7dd39495a5460a01abc2f4dab86 *R/bifactor.from.keys.R
 338b635c55838aea7d0ed2e401057833 *R/cache.clean.R
 21ee830c3d46ee43c0d6edfc4a4ae408 *R/cache.setup.R
 7d14c8572e83b2e7d427634494a89301 *R/cfa.from.keys.R
@@ -11,9 +11,9 @@ f52eb2abd6cf79dc41effdff07747806 *R/esem.from.keys.r
 84da339486d6d6ca95b5c2ce5e68ca87 *R/esem.from.mods.R
 83bc925a6e238e16be3190015009c947 *R/globals.R
 af5bdda703eeff6b81bb3aafa9b917cd *R/sem.check.R
-29c81478d2cfafc989cbece833370037 *R/sem.cor.R
+7f2a0256143b6ac4d0f0fafba2b3256e *R/sem.cor.R
 fd31632dc621ae6b061c72248e235565 *R/sem.path.R
-473a52e09ce9a196a5897181ca03c15e *README.md
+e684c5ca3bac068e460beabde3057fae *README.md
 c44802535c5cbae3693e6ea4e35713a4 *data/BFIGritHope.rda
 460bd90ea35a38a2bdf894366086cc68 *inst/CITATION
 4f55c2e878d87c1fde26ce8b042e3571 *man/BFIGritHope.Rd
@@ -25,11 +25,11 @@ b233ab9bb8353ebed7493e88e9736e01 *man/cfa.from.keys.Rd
 3781fa6223945a1e491f74176b35d937 *man/esem.from.keys.Rd
 bd6a276749bdc36465c3338320da4bb6 *man/esem.from.mods.Rd
 ebf1ab984dfd23d45ee2d61755565f6e *man/sem.check.Rd
-dbb27ae5b56e15bb617cead47659fad0 *man/sem.cor.Rd
+94df3d40267d6c302e781b27cd5fd3c3 *man/sem.cor.Rd
 a303e7df78348d0e942d9ab60ba31967 *man/sem.path.Rd
 043503bd0b1b1c178843429b142d9b4a *tests/testthat.R
 11899838f629236f2f2e4ab3d4a297eb *tests/testthat/helper.R
-d16733bf90547ddca0cbdffadfde88d9 *tests/testthat/test-bifactor.from.keys.R
+efedbed0143abf0161274f149e6f648b *tests/testthat/test-bifactor.from.keys.R
 50e4031ded075ab2e38a49bb7ffed48c *tests/testthat/test-cache.clean.R
 b8b6b9ea959664d99d608b4d86f6b8ef *tests/testthat/test-cache.setup.R
 a27298f7bfa56fe3e9b911b71854de0c *tests/testthat/test-cfa.from.keys.R
@@ -37,5 +37,5 @@ b9258e3fb040c1fce63eb147fc3df4a3 *tests/testthat/test-efa.from.keys.R
 40d2831fb8e76047729057551d1cb8be *tests/testthat/test-esem.from.keys.r
 81f965448758d64ea0735ebbec29b63f *tests/testthat/test-esem.from.mods.R
 0a9ee5ec3031a6aa4f66f5911ced58eb *tests/testthat/test-sem.check.R
-309102b60a7d71b00959bb994d28863d *tests/testthat/test-sem.cor.R
+1b88685f1320e4a3360a4192ee8dff9c *tests/testthat/test-sem.cor.R
 23bf7dbf00889a2a0c91f0f31a7e0e76 *tests/testthat/test-sem.path.R
