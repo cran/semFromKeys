@@ -54,7 +54,7 @@
 #' If both `fit_x = NULL` and `items = NULL`, then correlations between all
 #' `fit_y` latent variables are computed. If either `fit_x` or `items`
 #' are specified, then correlations will be computed between `fit_y` latent
-#' variables and any specified `fit_x` latent variables and `items`.
+#' variables and any specified `items` and `fit_x` latent variables.
 #' Items are treated as single item latent variables with loadings of
 #' `item_loadings` if specified or freely estimated otherwise.
 #' Hierarchical models are not supported and the function will exit with an
@@ -67,45 +67,14 @@
 #'
 #' To control for interpretational confounding (Burt, 1976), the function uses
 #' either Burt's (1976) 2-stage procedure (`nagy = FALSE`) or Nagy and
-#' colleagues' (2017) extension procedure (`nagy = TRUE`).
-#' Interpretational confounding occurs when the interpretation of a latent
-#' variable is confounded by the inclusion of a conceptually distinct variable
-#' in the model.
-#' That is, the loadings of items on a latent variable can change, in some
-#' cases markedly, due to the inclusion of a conceptually distinct factor.
-#' This means that the factor does not represent a consistent concept for
-#' different models, even in the same sample, as the loadings can change model
-#' to model.
-#'
-#' Burt (1976) proposed simply fixing measurement model parameters in the model
-#' estimating structural parameters.
-#' This method means that latent variables' interpretations cannot change with
-#' the addition or removal of different variables and less than ideal fit at the
-#' measurement level cannot affect latent variable correlations.
-#' Burt's (1976) method therefore solve interpretational confounding.
-#' However, Burt's method also underestimates uncertainty in the measurement
-#' part of the full model (e.g., Nagy et al., 2017), which results in biased
-#' standard errors and fit statistics, although effects are usually small.
-#'
-#' Alternatively, Nagy's method involves allowing item residuals to correlate
-#' with external variables and constrains those relationships such that the
-#' model is identifiable.
-#' Specifically, one of the methods to constrain these relationships minimises
-#' the sum of squares of the correlations between each latent variable's items'
-#' residuals and each of the structural variables in the model (excluding the
-#' factor(s) they form part of the measurement of).
-#' By using this method, measurement parameters in the structural model match
-#' those of isolated measurement models without having to constrain them
-#' directly.
-#' As a result, unbiased standard errors are preserved while simultaneously
-#' eliminating interpretational confounding.
-#'
-#' Which method should be chosen?
-#' Burt's method is faster but artificially constrains parameters,
-#' thereby biasing standard errors and model fit indices.
-#' They should, however, give very similar point estimates for correlations.
-#' Therefore, Nagy's method should be preferred whenever confidence intervals
-#' or model fit matter, except, perhaps, for large sets of variables.
+#' colleagues' (2017) extension procedure (`nagy = TRUE`) (see the
+#' Interpretational Confounding section below).
+#' When CFA input models include correlated residuals, these are included as
+#' fixed values when `nagy = FALSE` and as free parameters when `nagy = TRUE`.
+#' Although the effect of correlated residuals on model performance has not been
+#' tested with Nagy and colleagues' method, they have been included because it
+#' is likely the best option (i.e., better than employing Burt's method,
+#' omitting them, or ignoring interpretational confounding).
 #'
 #' If Nagy and colleagues' (2017) method is selected (with `nagy = TRUE`, the
 #' default), correlations between factors and item residuals will be included in
@@ -117,6 +86,22 @@
 #' If all included measurement models included more than one latent variable,
 #' then outputs will be switched to match `nagy = FALSE` with a warning.
 #'
+#' Which method should be used?
+#' Burt's method is faster but artificially constrains parameters, thereby
+#' biasing standard errors and model fit indices.
+#' Nagy's method is slower, but produces accurate standard errors and fit
+#' statistics as well as correlations between item residuals and factors (noted
+#' above).
+#' Both methods should, however, produce very similar point estimates for
+#' correlations.
+#' Therefore, Nagy and colleagues' method should be preferred whenever
+#' confidence intervals, model fit, or residuals' correlations with factors
+#' matter, except, perhaps, for large sets of variables.
+#' Burt's method should be preferred whenever multi-factor models are specified,
+#' although the function will make this change automatically for such models
+#' when `nagy = TRUE`. Either can be used in other cases.
+#'
+#' @section Non-Positive Definite Correlation Matrix Warning:
 #' It is possible for latent variable correlations to produce a non-positive
 #' definite correlation matrix between variables included in `fit_y` (when
 #' `fit_x` and `items` are not specified), especially when closely related
@@ -124,20 +109,21 @@
 #' If the matrix of latent variables is not positive definite, then the matrix
 #' will be adjusted to the nearest positive definite matrix using the
 #' [Matrix::nearPD] function, which employs the method developed by Higham
-#' (2002), and a message will state that the matrix was adjusted, and what the
-#' maximum adjustment to any cell was.
+#' (2002).
+#' In such cases, a message will state that the matrix was adjusted, and what
+#' the maximum adjustment to any cell was.
 #' Confidence intervals will be adjusted by the same amount as the corresponding
 #' cell of the correlation matrix.
 #' P-values will not be adjusted, however, so will be very slightly incorrect.
 #' In general, inaccuracies in p-values will be most likely for larger
-#' correlations (i.e., ones more likely to be highly significant) but if the
-#' maximum adjustment, printed in the warning, is large, then use p-values with
-#' care.
+#' correlations (i.e., ones more likely to be highly significant) so will rarely
+#' or never make any material difference.
 #'
+#' @section save_out and check:
 #' The model relies on [sem.check] for the back-end of running the models,
-#' which enables saving inputs and outputs from model runs
-#' (with `save_out = TRUE`) and checking to see if anything has changed from
-#' prior runs before running again (with `check = TRUE`).
+#' which enables saving inputs and outputs from model runs (with
+#' `save_out = TRUE`) and checking to see if anything has changed from prior
+#' runs before running again (with `check = TRUE`).
 #' The functionality was included for a number of very slow models or a lot of
 #' faster models, such that time spent rerunning them would be onerous.
 #' In the case of `sem.cor`, the number of correlations can add up quickly.
@@ -148,6 +134,8 @@
 #' minutes. In these cases, the functionality may be useful.
 #' For further details on how this works, see the [sem.check] function
 #' documentation.
+#'
+#' @inheritSection esem.from.keys Interpretational Confounding
 #'
 #' @seealso
 #' [sem.check], [lavaan::sem], [matrixcalc::is.positive.definite],
@@ -331,16 +319,12 @@ sem.cor <- function(
   nagy_sel <- rep(nagy, length(par_yx))
   names(nagy_sel) <- names(par_yx)
   if (nagy) {
-    ord_n <- c()
-    cor_n <- c()
-    cor_sel <- c()
     for (par_n in names(par_yx)) {
       par <- par_yx[[par_n]]
       sel <- sel_yx[[par_n]]
       nm <- unique(par$lhs[par$op == "=~"])
       if (length(nm) > 1) {
         nagy_sel[par_n] <- FALSE
-        warn_cor <- FALSE
         warning(
           paste0(
             " The '", sel, "' model including '",
@@ -348,47 +332,26 @@ sem.cor <- function(
             "' includes more than one latent variable.\n   ",
             "Measurement models with more than one latent variable are not ",
             "currently supported in 'sem.cor' with 'nagy = TRUE'.\n   ",
-            "Models including these variables will be switched to Burt's ",
-            "method (i.e., 'nagy = FALSE')."
+            "Models including these variables have been switched to Burt's ",
+            "method."
           )
         )
       } else {
-        if (sum(par$op == "~~" & par$lhs != par$rhs & par$est != 0) > 0) {
-          warn_cor <- TRUE
-          cor_n <- c(cor_n, nm)
-          cor_sel <- unique(c(cor_sel, sel))
-        } else {
-          warn_cor <- FALSE
+        if (nrow(par[par$op == "=~", ]) < 3) {
+          nagy_sel[par_n] <- FALSE
+          warning(
+            paste0(
+              " The '", sel, "' model including '",
+              paste(nm, collapse = "' and '"),
+              "' includes fewer than three items.\n   ",
+              "This is not supported with 'nagy = TRUE'.\n   ",
+              "Model including these variables have been switched to Burt's ",
+              "method."
+            )
+          )
         }
       }
     }
-    if (warn_cor) {
-      warning(
-        paste0(
-          " The '", paste(cor_sel, collapse = " and "),
-          "' models including the latent variables listed below include ",
-          "at least one correlation between two different variables ",
-          "(such as correlated residuals).\n   ",
-          "This is not currently supported in 'sem.cor' when ",
-          "'nagy = TRUE'.\n   ",
-          "The model has been run without them.\n   ",
-          "If they are necessary, they are supported with 'nagy = FALSE'.",
-          "\n\n      ",
-          paste0(cor_n, collapse = "; ")
-        )
-      )
-    }
-  }
-  if (nagy & sum(nagy_sel) == 0) {
-    nagy <- FALSE
-    warning(
-      paste(
-        "All correlations include a measurement model with more than one",
-        "latent variable, which are not currently supported with ",
-        "'nagy = TRUE'.\n   ",
-        "Therefore, 'nagy' has been switch to 'FALSE'."
-      )
-    )
   }
   if (is.null(fit_x) & is.null(items)) {
     pars <- lapply(
@@ -511,6 +474,8 @@ sem.cor <- function(
               y1u <- y1[y1$op == "~~" & y1$lhs != yn & y1$lhs == y1$rhs, ]
               x1v <- x1[x1$lhs == x1$rhs & x1$lhs == xn, ]
               y1v <- y1[y1$lhs == y1$rhs & y1$lhs == yn, ]
+              x1e <- x1[x1$op == "~~" & x1$lhs != x1$rhs, ]
+              y1e <- y1[y1$op == "~~" & y1$lhs != y1$rhs, ]
               mod0 <- paste0(
                 # CFA1
                 paste0(
@@ -527,6 +492,11 @@ sem.cor <- function(
                 "\n",
                 paste0(x1v$lhs, x1v$op, x1v$est, "*", x1v$rhs),
                 "\n",
+                if (nrow(x1e) > 0) {
+                  paste0(
+                    x1e$lhs, x1e$op, "start(", x1e$est, ")*", x1e$rhs, "\n"
+                  )
+                },
                 # CFA2
                 paste0(
                   y1l$lhs, y1l$op, "ly", seq_along(key_y), "*start(", y1l$est,
@@ -542,6 +512,9 @@ sem.cor <- function(
                 "\n",
                 paste0(y1v$lhs, y1v$op, y1v$est, "*", y1v$rhs),
                 "\n",
+                if (nrow(y1e) > 0) {
+                  paste0(y1e$lhs, y1e$op, "start(", y1e$est, ")*", y1e$rhs, "\n")
+                },
                 # Extension parameters
                 paste0(
                   mapply(
@@ -622,15 +595,16 @@ sem.cor <- function(
   if (!is.null(items)) {
     # Correlations with single items
     mod_key_i <- mapply(
-      y = par_y, ns = nagy_sel[names(fit_y)], SIMPLIFY = FALSE,
-      FUN = function(y, ns) {
+      y = par_y, ns = nagy_sel[names(fit_y)], yn = names(par_y),
+      SIMPLIFY = FALSE,
+      FUN = function(y, ns, yn) {
         y1 <- y[y$op == "=~" | (y$op == "~~" & y$lhs == y$rhs), ]
-        yn <- unique(y$lhs[y$op == "=~"])
         yfn <- unique(y1$lhs[y1$op == "=~"])
         if (ns) {
           y1l <- y1[y1$op == "=~", ]
           y1u <- y1[y1$op == "~~" & y1$lhs != yn, ]
           y1v <- y1[y1$lhs == y1$rhs & y1$lhs == yn, ]
+          y1e <- y1[y1$op == "~~" & y1$lhs != y1$rhs, ]
           key_y <- unique(y1$rhs[y1$op == "=~"])
         }
         item_overlap <- items[items %in% y1$rhs]
@@ -695,6 +669,9 @@ sem.cor <- function(
                 # Correlation
                 paste0(yn, "~~", paste0(i_l, collapse = "+")),
                 "\n",
+                if (nrow(y1e) > 0) {
+                  paste0(y1e$lhs, y1e$op, "start(", y1e$est, ")*", y1e$rhs, "\n")
+                },
                 # Extension parameters
                 paste0(
                   mapply(
@@ -726,7 +703,8 @@ sem.cor <- function(
         return(
           list(
             mod = mod1, key = key1,
-            yfn = rep(yfn, each = length(items)),
+            yfn =
+              stats::setNames(rep(list(yfn), each = length(items)), nm = items),
             ns = rep(ns, each = length(items))
           )
         )
@@ -735,14 +713,28 @@ sem.cor <- function(
     mods_i <- unlist(lapply(mod_key_i, function(x) x$mod), recursive = FALSE)
     key_i <- unlist(lapply(mod_key_i, function(x) x$key), recursive = FALSE)
     yfn_i <- unlist(lapply(mod_key_i, function(x) x$yfn), recursive = FALSE)
+    yn_i <- unlist(lapply(mod_key_i, function(x) x$yn), recursive = FALSE)
     ns_i <- unlist(lapply(mod_key_i, function(x) x$ns), recursive = FALSE)
     if (is.null(mods)) {
       mods <- mods_i
       key <- key_i
+      ns <- ns_i
     } else {
       mods <- c(mods, mods_i)
       key <- c(key, key_i)
+      ns <- c(ns, ns_i)
     }
+  }
+  if (nagy & sum(ns) == 0) {
+    nagy <- FALSE
+    warning(
+      paste(
+        "All correlations include a measurement model with more than one",
+        "latent variable or a factor with fewer than 3 items, which are not",
+        "currently supported with 'nagy = TRUE'.\n   ",
+        "Therefore, 'nagy' has been switch to 'FALSE'."
+      )
+    )
   }
   fit <- sem.check(
     mods,
@@ -842,17 +834,33 @@ sem.cor <- function(
     cor_mat_yi <- sapply(
       extract,
       function(ext) {
+        sel <- grepl(
+          paste0("\\.", items, "$", collapse = "|"), names(fit$par_std)
+        )
+        tmp0 <- do.call(
+          rbind,
+          mapply(
+            x = fit$par_std[sel],
+            i0 = rep(items, length(yfn_i) / length(items)),
+            yn0 = yfn_i,
+            FUN = function(x, i0, yn0) {
+              i <- paste0(i0, "_l")
+              selr <- x$lhs %in% yn0 & x$rhs == i
+              selc <- c("lhs", "rhs", ext)
+              x[selr, selc]
+            },
+            SIMPLIFY = FALSE
+          )
+        )
+        tmp0 <- tmp0[!duplicated(tmp0), ]
         tmp <- sapply(
-          stats::setNames(nm = unique(unlist(yfn_i))),
+          unique(unlist(yfn_i)),
           function(y) {
             sapply(
-              stats::setNames(nm = items),
-              function(i) {
-                ptn <- paste0("^", y, "\\.", i, "$", collapse = "|")
-                x <- fit$par_std[grepl(ptn, names(fit$par_std))][[1]]
-                sel <- x$lhs != x$rhs & x$op == "~~" &
-                  grepl(y, x$lhs) & grepl(paste0(i, "_l"), x$rhs)
-                x[[ext]][sel]
+              items,
+              function(i0) {
+                i <- paste0(i0, "_l")
+                tmp0[[ext]][tmp0$lhs == y & tmp0$rhs == i]
               }
             )
           }

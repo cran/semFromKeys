@@ -1,7 +1,7 @@
 Package: semFromKeys
 Type: Package
 Title: Run 'lavaan' Models from Keys Lists
-Version: 0.5.5
+Version: 0.5.6
 Authors@R: c(
     person(
       "Timothy F.", "Bainbridge",
@@ -30,8 +30,8 @@ Config/testthat/edition: 3
 URL: https://github.com/timbainbridge/semFromKeys
 BugReports: https://github.com/timbainbridge/semFromKeys/issues
 NeedsCompilation: no
-Packaged: 2026-09-14 00:28:39 UTC; tim
+Packaged: 2026-10-11 02:28:37 UTC; tim
 Author: Timothy F. Bainbridge [aut, cre, cph]
 Maintainer: Timothy F. Bainbridge <tfbainbridge@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-09-14 02:50:02 UTC
+Date/Publication: 2026-10-11 02:50:02 UTC

@@ -7,6 +7,7 @@
 cfa.from.keys(
   keys,
   data,
+  extra = NULL,
   fit_save = TRUE,
   fit_measures = "all",
   std.lv = TRUE,
@@ -20,11 +21,17 @@ cfa.from.keys(
 }
 \arguments{
 \item{keys}{A named list of keys.
-Names should be scale names,
-elements should a list of items included in each scale.}
+Names should be scale names, elements should a vector of items included in
+each scale.}
 
-\item{data}{A dataframe or object coercible to a dataframe.
+\item{data}{A data frame or object coercible to a data frame.
 Data must include all observed variables in any of the keys.}
+
+\item{extra}{A vector of strings of residuals to correlate in lavaan code (e.g.,
+\code{"item1 ~~ item2"}).
+Strings of code can be in any order.
+Whenever a model includes all items in a string, the string will be appended
+to the model code.}
 
 \item{fit_save}{Logical.
 \code{TRUE} indicates model fit measures should be included in the output;
@@ -91,12 +98,17 @@ and, if \code{fit_save = TRUE}, a matrix of fit measures for each model.
 }
 \description{
 \code{cfa.from.keys} runs a confirmatory factor analysis (CFA) model for each
-element of a keys list. The keys list must be a named list of scales, where
-each element is an item from the corresponding scale. The function is
-designed to streamline running CFA models for all scales in a sample and to
-input model outputs into downstream functions.
+element of a keys list. The keys list should be a named list of scales, where
+each element contains a vector of items from the corresponding scale.
+The function is designed to streamline running CFA models for all scales in a
+sample and to input model outputs into downstream functions.
 }
 \details{
+If \code{keys} is specified as a vector of items, the function will assume those
+items are meant to comprise a single scale, and will convert the input to a
+length 1 list with the element named 'factor'. A warning will be sent when
+this occurs.
+
 The model relies on \link{sem.check} for the back-end of running the models.
 This enables saving inputs and outputs from model runs
 (with \code{save_out = TRUE}) and checking to see if anything has changed from
@@ -122,7 +134,10 @@ keys <- sapply(
   keys0, function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))]
 )
 # Run models
-cfa_fit <- cfa.from.keys(keys, BFIGritHope, check = FALSE, fit_save = TRUE)
+cfa_fit <- cfa.from.keys(
+  keys, BFIGritHope,
+  extra = c("grit_c_1 ~~ grit_c_2", "grit_p_1 ~~ grit_p_2")
+)
 # Examine some results
 summary(cfa_fit$fit$grit_c)                # Standard lavaan summary
 cfa_fit$fit_measures[, c("cfi", "rmsea")]  # Fit measures

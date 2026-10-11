@@ -1,19 +1,25 @@
 #' Runs CFA models for multiple scales based on items in a keys list.
 #'
 #' `cfa.from.keys` runs a confirmatory factor analysis (CFA) model for each
-#' element of a keys list. The keys list must be a named list of scales, where
-#' each element is an item from the corresponding scale. The function is
-#' designed to streamline running CFA models for all scales in a sample and to
-#' input model outputs into downstream functions.
+#' element of a keys list. The keys list should be a named list of scales, where
+#' each element contains a vector of items from the corresponding scale.
+#' The function is designed to streamline running CFA models for all scales in a
+#' sample and to input model outputs into downstream functions.
 #'
 #' @inheritParams sem.check
 #' @param keys
 #' A named list of keys.
-#' Names should be scale names,
-#' elements should a list of items included in each scale.
+#' Names should be scale names, elements should a vector of items included in
+#' each scale.
 #' @param data
-#' A dataframe or object coercible to a dataframe.
+#' A data frame or object coercible to a data frame.
 #' Data must include all observed variables in any of the keys.
+#' @param extra
+#' A vector of strings of residuals to correlate in lavaan code (e.g.,
+#' `"item1 ~~ item2"`).
+#' Strings of code can be in any order.
+#' Whenever a model includes all items in a string, the string will be appended
+#' to the model code.
 #' @param name
 #' A string indicating a subdirectory where model outputs will be saved when
 #' `save_out = TRUE` and checked against when `check = TRUE`.
@@ -37,6 +43,11 @@
 #' and, if `fit_save = TRUE`, a matrix of fit measures for each model.
 #'
 #' @details
+#' If `keys` is specified as a vector of items, the function will assume those
+#' items are meant to comprise a single scale, and will convert the input to a
+#' length 1 list with the element named 'factor'. A warning will be sent when
+#' this occurs.
+#'
 #' The model relies on [sem.check] for the back-end of running the models.
 #' This enables saving inputs and outputs from model runs
 #' (with `save_out = TRUE`) and checking to see if anything has changed from
@@ -68,31 +79,148 @@
 #'   keys0, function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))]
 #' )
 #' # Run models
-#' cfa_fit <- cfa.from.keys(keys, BFIGritHope, check = FALSE, fit_save = TRUE)
+#' cfa_fit <- cfa.from.keys(
+#'   keys, BFIGritHope,
+#'   extra = c("grit_c_1 ~~ grit_c_2", "grit_p_1 ~~ grit_p_2")
+#' )
 #' # Examine some results
 #' summary(cfa_fit$fit$grit_c)                # Standard lavaan summary
 #' cfa_fit$fit_measures[, c("cfi", "rmsea")]  # Fit measures
 
 cfa.from.keys <- function(
-    keys, data, fit_save = TRUE, fit_measures = "all",
+    keys, data, extra = NULL, fit_save = TRUE, fit_measures = "all",
     std.lv = TRUE, miss = "default", est = "default", ordered = NULL,
     name = "cfa", check = FALSE, save_out = FALSE
 ) {
-  mods <- mapply(
-    function(y, z) {
-      if (length(z) > 2) {
-        paste(y, "=~", paste(sapply(z, "["), collapse = " + "))
+  if (sum(sapply(keys, function(x) length(x) != 1)) == 0) {
+    if (sum(sapply(keys, function(x) !(x %in% names(data)))) == 0) {
+      warning(
+        paste0(
+          "'keys' appears to be a vector of items rather than a keys list and ",
+          "has been converted into a length 1 keys list with the name 'factor'."
+        )
+      )
+      keys <- list(factor = keys)
+    }
+  }
+
+  ####### Modified from esem.from.keys #######
+  if (!is.null(extra)) {
+    # Removal all fixed values and parameter names; remove punctuation
+    extra_vars <- lapply(
+      extra,
+      function(y) {
+        tmp <- stringr::str_split(
+          gsub("((\\+|~~|~).*?(\\*))", " ", y), "\\+|~|=|\n| ", simplify = TRUE
+        )
+        tmp[tmp != ""]
+      }
+    )
+    extra_vars1 <- unique(unlist(extra_vars))
+    extra_vars2 <- extra_vars1[!extra_vars1 %in% unlist(keys)]
+    if (length(extra_vars2) > 0) {
+      if (length(extra_vars2) > 1) {
+        stop(
+          paste0(
+            "The following items were found in 'extra' but do not match ",
+            "either a variable name in 'keys' or standard lavaan code.",
+            "\n\n    ", paste(extra_vars2, collapse = ", ")
+          )
+        )
       } else {
-        if (length(z) == 2) {
-          warning(paste(y, "is only length 2. Model results may be poor."))
-          paste0(y, " =~ 1 * ", z[[1]], "\n", y, " =~ ", z[[2]])
-        } else {
-          stop(paste(y, "is only length 1. Model cannot be run."))
+        stop(
+          paste0(
+            "'", extra_vars2, "' was found in 'extra' but does not match ",
+            "either a variable name in 'keys' or standard lavaan code."
+          )
+        )
+      }
+    }
+    sapply(
+      extra_vars,
+      function(x) {
+        if (sum(sapply(keys, function(y) sum(!x %in% y) == 0)) == 0) {
+          warning(
+            paste0(
+              "The extra code containing '", paste(x, collapse = "' and '"),
+              "' includes items that are not both/all in any single model. ",
+              "Therefore, the code has not been included in any model. "
+            )
+          )
         }
       }
-    },
-    y = names(keys), z = keys, SIMPLIFY = FALSE
-  )
+    )
+    mod_extra <- sapply(
+      keys,
+      function(k) {
+        tmp <- mapply(
+          xv = extra_vars, x = extra,
+          FUN = function(xv, x) if (sum(!xv %in% k) == 0) x else ""
+        )
+        tmp[tmp != ""]
+      }
+    )
+    ####### Modified from esem.from.keys #######
+
+    mods <- mapply(
+      function(x, y, z) {
+        if (length(z) > 3) {
+          # Check no. df
+          if (length(x) > choose(length(z) + 1, 2) - length(z) * 2 - 1) {
+            stop(
+              paste0(
+                "There are not enough degrees of freedom in the model for '", y,
+                "'. Remove at least one element of extra that includes only ",
+                "items in '", y, "'."
+              )
+            )
+          }
+          paste(
+            y, "=~", paste(z, collapse = " + "), "\n", paste(x, collapse = "\n")
+          )
+        } else {
+          if (length(z) == 3) {
+            # Not enough df for extra
+            if (length(x) > 0) {
+              warning(
+                paste0(
+                  "With only 3 items in '", y, "', there are not enough ",
+                  "degrees of freedom to include anything in extra for the ",
+                  "model. Therefore, the extra code that applied to the model ",
+                  "has been omitted."
+                )
+              )
+            }
+            paste(y, "=~", paste(z, collapse = " + "))
+          } else {
+            if (length(z) == 2) {
+              warning(paste(y, "is only length 2. Model results may be poor."))
+              paste0(y, " =~ 1 * ", z[[1]], "\n", y, " =~ ", z[[2]])
+            } else {
+              stop(paste(y, "is only length 1. Model cannot be run."))
+            }
+          }
+        }
+      },
+      x = mod_extra, y = names(keys), z = keys, SIMPLIFY = FALSE
+    )
+  } else {
+    mods <- mapply(
+      function(y, z) {
+        if (length(z) > 2) {
+          paste(y, "=~", paste(z, collapse = " + "))
+        } else {
+          if (length(z) == 2) {
+            warning(paste(y, "is only length 2. Model results may be poor."))
+            paste0(y, " =~ 1 * ", z[[1]], "\n", y, " =~ ", z[[2]])
+          } else {
+            stop(paste(y, "is only length 1. Model cannot be run."))
+          }
+        }
+      },
+      y = names(keys), z = keys, SIMPLIFY = FALSE
+    )
+  }
   sem.check(
     mods,
     data,

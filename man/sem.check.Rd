@@ -27,7 +27,7 @@ sem.check(
 \arguments{
 \item{mods}{A named list of lavaan models to run.}
 
-\item{data}{A dataframe or object coercible to a dataframe.
+\item{data}{A data frame or object coercible to a data frame.
 Data must include all observed variables used in any of the models.}
 
 \item{keys_s}{A named keys list matching the names and length of mod.}
@@ -141,7 +141,7 @@ functions, including \link{cfa.from.keys}, \link{bifactor.from.keys},
 Although it is recommended to use the appropriate upstream function whenever
 possible, there are not (currently) options to do so when customised lavaan
 models are required (with the exception of the \code{extra} argument in
-\link{sem.path};
+\link{sem.path});
 for example, when allowing two items' residuals to correlate in a CFA.
 \code{sem.check} can be used in these cases (see example).
 
