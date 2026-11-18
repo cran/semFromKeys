@@ -4,15 +4,18 @@ export(bifactor.from.keys)
 export(cache.clean)
 export(cache.setup)
 export(cfa.from.keys)
+export(check.cache)
 export(efa.from.keys)
 export(esem.from.keys)
 export(esem.from.mods)
+export(r2.change)
 export(sem.check)
 export(sem.cor)
 export(sem.path)
 importFrom(Matrix,nearPD)
 importFrom(lavaan,
   fitMeasures,
+  lavInspect,
   parameterEstimates,
   sam,
   sem,
@@ -21,6 +24,10 @@ importFrom(lavaan,
 )
 importFrom(matrixcalc,is.positive.definite)
 importFrom(openssl,md5)
+importFrom(stats,
+  na.omit,
+  qnorm
+)
 importFrom(stringr,
   str_replace_all,
   str_split

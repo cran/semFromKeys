@@ -110,9 +110,11 @@
 #'
 #' @examples
 #' # Create CFA keys
-#' keys0 <- c("grit_c", "grit_p", "hope_a", "hope_p")
-#' keys <- sapply(
-#'   keys0, function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))]
+#' keys <- list(
+#'   grit_p = paste0("grit_p_", 1:6),
+#'   grit_c = paste0("grit_c_", 1:6),
+#'   hope_a = paste0("hope_a_", 1:4),
+#'   hope_p = paste0("hope_p_", 1:4)
 #' )
 #' # Run CFA models
 #' cfa_fit <- cfa.from.keys(keys, BFIGritHope, check = FALSE, fit_save = FALSE)
@@ -136,7 +138,8 @@
 
 sem.path <- function(
     path, data, cfa_fit, extra = NULL,
-    fit_save = TRUE, fit_measures = "all", miss = "default", est = "default",
+    fit_save = TRUE, fit_measures = "all", progress = TRUE,
+    miss = "default", est = "default",
     name = "sam", check = FALSE, save_out = FALSE
 ) {
 
@@ -300,7 +303,7 @@ sem.path <- function(
   names(keys_s) <- name
   fit <- sem.check(
     mod, data = data, keys_s = keys_s,
-    fit_save = fit_save, fit_measures = fit_measures,
+    fit_save = fit_save, fit_measures = fit_measures, progress = progress,
     miss = miss, est = est, std = TRUE, ordered = NULL,
     name = name, check = check, save_out = save_out, use_sam = TRUE
   )

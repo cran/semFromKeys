@@ -96,16 +96,17 @@
 #'
 #' @examples
 #' # Create keys
-#' keys0 <- c("grit_c", "grit_p", "hope_a", "hope_p")
-#' keys <- sapply(
-#'   keys0, function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))]
+#' keys <- list(
+#'   grit_p = paste0("grit_p_", 1:6),
+#'   grit_c = paste0("grit_c_", 1:6),
+#'   hope_a = paste0("hope_a_", 1:4),
+#'   hope_p = paste0("hope_p_", 1:4)
 #' )
-#' keys_g0 <- c("grit", "hope")
-#' keys_g <- sapply(
-#'   keys_g0, function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))]
-#' )
+#' keys_g <- list(grit = unlist(keys[1:2]), hope = unlist(keys[3:4]))
 #' keys_b1 <- sapply(
-#'   keys_g0, function(x) keys0[grep(x, keys0)], simplify = FALSE
+#'   names(keys_g),
+#'   function(x) names(keys)[grep(x, names(keys))],
+#'   simplify = FALSE
 #' )
 #' # Including all factors produces a negative residual variance for hope.
 #' \donttest{bif_fit0 <- bifactor.from.keys(
@@ -125,7 +126,7 @@
 
 bifactor.from.keys <- function(
   keys_g, keys_b, keys, data, extra = NULL,
-  fit_save = TRUE, fit_measures = "all",
+  fit_save = TRUE, fit_measures = "all", progress = TRUE,
   std.lv = TRUE, miss = "default", est = "default", ordered = NULL,
   name = "bifactor", check = FALSE, save_out = FALSE
 ) {
@@ -302,6 +303,7 @@ bifactor.from.keys <- function(
     name = name,
     keys_s = items,
     keys_e = NULL,
+    progress = progress,
     std = FALSE,  # For use in 2-stage procedure, must use non-standardised.
     fit_save = fit_save,
     fit_measures = fit_measures,

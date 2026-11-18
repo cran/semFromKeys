@@ -14,6 +14,7 @@ sem.cor(
   nagy = TRUE,
   fit_save = FALSE,
   fit_measures = "all",
+  progress = TRUE,
   miss = "default",
   est = "default",
   name = "cors",
@@ -46,8 +47,8 @@ Irrelevant if \code{items = NULL}.}
 procedure instead of Burt's (1976) 2-stage procedure.}
 
 \item{fit_save}{Logical.
-\code{TRUE} indicates model fit measures should be included in the output;
-\code{FALSE} indicates model fit measures should not be included in the output.
+If \code{TRUE}, model fit measures are included in the output.
+If \code{FALSE}, model fit measures are not be included in the output.
 \code{FALSE} may be desirable when fit measures are of little interest and when
 they may take a long time to estimate.
 Fit can still be examined for individual models with,
@@ -57,6 +58,14 @@ Fit can still be examined for individual models with,
 as per the \code{fit.measures} parameter from lavaan's \link[lavaan:fitMeasures]{lavaan::fitMeasures}
 function.
 Defaults to 'all'. Irrelevant if \code{fit_save = FALSE}.}
+
+\item{progress}{If \code{TRUE}, messages showing progress on individual models are printed.
+If \code{FALSE}, general messages on progress and warning and error messages for
+individual models are printed.
+Defaults to \code{TRUE}.
+By default, lots of models will result in extensive messages being printed.
+To include only bare-bones progress (e.g., "Fitting models", "Generating
+parameter estimates"), errors, and warnings, set \code{progress = FALSE}.}
 
 \item{miss}{A string.
 Sets the \code{missing} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
@@ -75,18 +84,17 @@ The name should be unique for each set of models, or outputs from calls with
 the same name will be overwritten.}
 
 \item{check}{Logical.
-\code{TRUE} indicates that current inputs should be compared to previous inputs
-if they exist and that the model should not be rerun if nothing has changed;
-\code{FALSE} indicates that these checks should not be made and the model should
-be run regardless of the existence of previous inputs.}
+If \code{TRUE}, inputs are compared to previous inputs and, if they exist,
+the model will not be rerun if nothing has changed.
+If \code{FALSE}, the model will be run regardless of the existence of previous
+inputs.}
 
 \item{save_out}{Logical.
-\code{TRUE} indicates that model code, a hash of the data, important input
-parameter values, and output will be saved;
-\code{FALSE} indicates that nothing will be saved.
+If \code{TRUE}, model code, a hash of the data, input parameter values, and output
+are saved.
+If \code{FALSE}, nothing is saved.
 Selecting \code{save_out = TRUE} enables the function to not rerun models next
-time if \code{check = TRUE} the next time the code is run and nothing has changed
-in the meantime.}
+time if \code{check = TRUE} and nothing has changed in the meantime.}
 }
 \value{
 Returns a list of length 4-7 depending on option selections.
@@ -225,7 +233,7 @@ This method means that misspecification of one measurement model cannot
 affect other measurement models and that the interpretation of measured
 constructs cannot change based on unrelated factors.
 However, it is not a perfect solution---by fixing measurement parameters,
-uncertainty in their estimation is neglected (e.g., Nagy et al., 2017), which
+uncertainty in their estimation is neglected (Nagy et al., 2017), which
 results in biased standard errors and fit statistics.
 
 A third option was proposed by Nagy and colleagues (2017), who introduced an
@@ -247,7 +255,7 @@ the correlation estimates, thereby undermining the primary benefit of the
 method.
 
 A final solution to interpretation confounding was proposed by Rosseel and
-Loh (2022) with their SAM approach.
+Loh (2022) with their "Structural-After-Measurement" (SAM) approach.
 This method essentially follows Burt's (1976) method but adjust the procedure
 to overcome its issues.
 They distinguish two SAM varieties--"local SAM" and "global SAM".
@@ -262,9 +270,11 @@ their measurement.
 
 \examples{
 # Create CFA keys
-keys0 <- c("grit_c", "grit_p", "hope_a", "hope_p")
-keys <- sapply(
-  keys0, function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))]
+keys <- list(
+  grit_p = paste0("grit_p_", 1:6),
+  grit_c = paste0("grit_c_", 1:6),
+  hope_a = paste0("hope_a_", 1:4),
+  hope_p = paste0("hope_p_", 1:4)
 )
 # Run CFA models
 cfa_fit <- cfa.from.keys(keys, BFIGritHope, check = FALSE, fit_save = FALSE)
@@ -275,7 +285,7 @@ cors$cor_mat
 
 # Correlations of grit facets with hope facets and the first item from each
 # Big Five factor.
-items <- names(BFIGritHope)[grep("bfi_.*1_1", names(BFIGritHope))]
+items <- c("bfi_e1_1", "bfi_a1_1", "bfi_c1_1", "bfi_n1_1", "bfi_o1_1")
 cors2 <- sem.cor(
   BFIGritHope, cfa_fit$fit[1:2], cfa_fit$fit[3:4], items, nagy = FALSE
 )

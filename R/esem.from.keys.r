@@ -70,7 +70,7 @@
 #' `esem.from.keys` takes keys lists as inputs and `esem.from.mods` takes fitted
 #' measurement models as inputs.
 #' To prevent interpretational confounding (Burt, 1976), `esem.from.keys` uses
-#' Rosseel and Loh's (2022) Structural After Measurement (SAM) method and
+#' Rosseel and Loh's (2022) "Structural-After-Measurement" (SAM) method and
 #' `esem.from.mods` uses Burt's (1976) 2-stage procedure.
 #' In general, `esem.from.keys` should be used for CFA measurement models and
 #' `esem.from.mods` should be used for bi-factor measurement models, which are
@@ -132,7 +132,7 @@
 #' affect other measurement models and that the interpretation of measured
 #' constructs cannot change based on unrelated factors.
 #' However, it is not a perfect solution---by fixing measurement parameters,
-#' uncertainty in their estimation is neglected (e.g., Nagy et al., 2017), which
+#' uncertainty in their estimation is neglected (Nagy et al., 2017), which
 #' results in biased standard errors and fit statistics.
 #'
 #' A third option was proposed by Nagy and colleagues (2017), who introduced an
@@ -154,7 +154,7 @@
 #' method.
 #'
 #' A final solution to interpretation confounding was proposed by Rosseel and
-#' Loh (2022) with their SAM approach.
+#' Loh (2022) with their "Structural-After-Measurement" (SAM) approach.
 #' This method essentially follows Burt's (1976) method but adjust the procedure
 #' to overcome its issues.
 #' They distinguish two SAM varieties--"local SAM" and "global SAM".
@@ -235,26 +235,28 @@
 #' https://doi.org/10.1037/pspp0000096.
 #'
 #' @importFrom lavaan summary
+#' @export
 #'
 #' @examples
 #' # Create CFA keys
-#' keys0 <- c("hope_a", "hope_p")
-#' keys <- sapply(
-#'   keys0,
-#'   function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))],
-#'   simplify = FALSE
+#' keys <- list(
+#'   hope_a = paste0("hope_a_", 1:4),
+#'   hope_p = paste0("hope_p_", 1:4)
 #' )
 #' # Create EFA keys
 #' # Using only 3 factors and fewer items to save time for a simple example
 #' # (This results in a less than ideal solution but it doesn't matter for an
 #' # example)
-#' keys_e0 <- paste0("bfi_", c("e", "a", "c"))
-#' keys_e <- sapply(
-#'   keys_e0,
-#'   function(x) {
-#'     names(BFIGritHope)[grep(paste0(x, "[1-2]_[1-2]"), names(BFIGritHope))]
-#'   },
-#'   simplify = FALSE
+#' keys_e <- list(
+#'   bfi_e = c(
+#'     paste0("bfi_e", c("1_1", "1_2", "2_1", "2_2", "3_1", "3_2"))
+#'   ),
+#'   bfi_a = c(
+#'     paste0("bfi_a", c("1_1", "1_2", "2_1", "2_2", "3_1", "3_2"))
+#'   ),
+#'   bfi_c = c(
+#'     paste0("bfi_c", c("1_1", "1_2", "2_1", "2_2", "3_1", "3_2"))
+#'   )
 #' )
 #'
 #' # Run 'esem.from.keys' models
@@ -279,12 +281,11 @@
 #' summary(esem_fit$fit$grit_c)  # Standard lavaan summary
 #' esem_fit$r2                   # R-squareds
 #' esem_fit$b                    # Betas
-#'
-#' @export
 
 esem.from.keys <- function(
     data, keys_e, keys, extra = NULL,
-    fit_save = FALSE, fit_measures = "all", miss = "default", est = "default",
+    fit_save = FALSE, fit_measures = "all", progress = TRUE,
+    miss = "default", est = "default",
     name = "esam", check = FALSE, save_out = FALSE
 ) {
   if (sum(sapply(keys, function(x) length(x) != 1)) == 0) {
@@ -325,16 +326,18 @@ esem.from.keys <- function(
       if (length(extra_vars2) > 1) {
         stop(
           paste0(
-            "The following items were found in 'extra' but do not match either ",
-            "a variable name in 'keys' or 'keys_e', or standard lavaan code.\n\n",
-            "     ", paste(extra_vars2, collapse = ", ")
+            "The following items were found in 'extra' but do not match ",
+            "either a variable name in 'keys' or 'keys_e', or standard lavaan ",
+            "code.\n\n     ",
+            paste(extra_vars2, collapse = ", ")
           )
         )
       } else {
         stop(
           paste0(
-            "'", extra_vars2, "' was found in 'extra' but does not match either ",
-            "a variable name in 'keys' or 'keys_e', or standard lavaan code."
+            "'", extra_vars2, "' was found in 'extra' but does not match ",
+            "either a variable name in 'keys' or 'keys_e', or standard lavaan ",
+            "code."
           )
         )
       }
@@ -394,6 +397,7 @@ esem.from.keys <- function(
     name = name,
     keys_s = keys,
     keys_e = keys_e,
+    progress = progress,
     std = TRUE,  # For r2 calcs.
     fit_save = fit_save,
     fit_measures = fit_measures,
@@ -455,7 +459,8 @@ esem.from.keys <- function(
 
 esem.from.mods <- function(
     data, efa_fit, cfa_fit = NULL, bif_fit = NULL,
-    fit_save = FALSE, fit_measures = "all", miss = "default", est = "default",
+    fit_save = FALSE, fit_measures = "all", progress = TRUE,
+    miss = "default", est = "default",
     name = "esem", check = FALSE, save_out = FALSE
 ) {
   if (is.null(cfa_fit) & is.null(bif_fit)) {
@@ -718,6 +723,7 @@ esem.from.mods <- function(
     name = name,
     keys_s = keys_s,
     keys_e = efa_keys,
+    progress = progress,
     std = TRUE,  # For r2 calcs.
     fit_save = fit_save,
     fit_measures = fit_measures,

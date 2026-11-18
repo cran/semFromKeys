@@ -12,6 +12,7 @@ esem.from.keys(
   extra = NULL,
   fit_save = FALSE,
   fit_measures = "all",
+  progress = TRUE,
   miss = "default",
   est = "default",
   name = "esam",
@@ -26,6 +27,7 @@ esem.from.mods(
   bif_fit = NULL,
   fit_save = FALSE,
   fit_measures = "all",
+  progress = TRUE,
   miss = "default",
   est = "default",
   name = "esem",
@@ -54,8 +56,8 @@ Currently the argument only supports allowing correlations between item
 residuals.}
 
 \item{fit_save}{Logical.
-\code{TRUE} indicates model fit measures should be included in the output;
-\code{FALSE} indicates model fit measures should not be included in the output.
+If \code{TRUE}, model fit measures are included in the output.
+If \code{FALSE}, model fit measures are not be included in the output.
 \code{FALSE} may be desirable when fit measures are of little interest and when
 they may take a long time to estimate.
 Fit can still be examined for individual models with,
@@ -65,6 +67,14 @@ Fit can still be examined for individual models with,
 as per the \code{fit.measures} parameter from lavaan's \link[lavaan:fitMeasures]{lavaan::fitMeasures}
 function.
 Defaults to 'all'. Irrelevant if \code{fit_save = FALSE}.}
+
+\item{progress}{If \code{TRUE}, messages showing progress on individual models are printed.
+If \code{FALSE}, general messages on progress and warning and error messages for
+individual models are printed.
+Defaults to \code{TRUE}.
+By default, lots of models will result in extensive messages being printed.
+To include only bare-bones progress (e.g., "Fitting models", "Generating
+parameter estimates"), errors, and warnings, set \code{progress = FALSE}.}
 
 \item{miss}{A string.
 Sets the \code{missing} parameter, as per lavaan (see \link[lavaan:lavOptions]{lavaan::lavOptions}).
@@ -83,18 +93,17 @@ The name should be unique for each set of models, or outputs from calls with
 the same name will be overwritten.}
 
 \item{check}{Logical.
-\code{TRUE} indicates that current inputs should be compared to previous inputs
-if they exist and that the model should not be rerun if nothing has changed;
-\code{FALSE} indicates that these checks should not be made and the model should
-be run regardless of the existence of previous inputs.}
+If \code{TRUE}, inputs are compared to previous inputs and, if they exist,
+the model will not be rerun if nothing has changed.
+If \code{FALSE}, the model will be run regardless of the existence of previous
+inputs.}
 
 \item{save_out}{Logical.
-\code{TRUE} indicates that model code, a hash of the data, important input
-parameter values, and output will be saved;
-\code{FALSE} indicates that nothing will be saved.
+If \code{TRUE}, model code, a hash of the data, input parameter values, and output
+are saved.
+If \code{FALSE}, nothing is saved.
 Selecting \code{save_out = TRUE} enables the function to not rerun models next
-time if \code{check = TRUE} the next time the code is run and nothing has changed
-in the meantime.}
+time if \code{check = TRUE} and nothing has changed in the meantime.}
 
 \item{efa_fit}{A fitted lavaan object of an EFA model.}
 
@@ -130,7 +139,7 @@ describe scales' variance.
 \code{esem.from.keys} takes keys lists as inputs and \code{esem.from.mods} takes fitted
 measurement models as inputs.
 To prevent interpretational confounding (Burt, 1976), \code{esem.from.keys} uses
-Rosseel and Loh's (2022) Structural After Measurement (SAM) method and
+Rosseel and Loh's (2022) "Structural-After-Measurement" (SAM) method and
 \code{esem.from.mods} uses Burt's (1976) 2-stage procedure.
 In general, \code{esem.from.keys} should be used for CFA measurement models and
 \code{esem.from.mods} should be used for bi-factor measurement models, which are
@@ -193,7 +202,7 @@ This method means that misspecification of one measurement model cannot
 affect other measurement models and that the interpretation of measured
 constructs cannot change based on unrelated factors.
 However, it is not a perfect solution---by fixing measurement parameters,
-uncertainty in their estimation is neglected (e.g., Nagy et al., 2017), which
+uncertainty in their estimation is neglected (Nagy et al., 2017), which
 results in biased standard errors and fit statistics.
 
 A third option was proposed by Nagy and colleagues (2017), who introduced an
@@ -215,7 +224,7 @@ the correlation estimates, thereby undermining the primary benefit of the
 method.
 
 A final solution to interpretation confounding was proposed by Rosseel and
-Loh (2022) with their SAM approach.
+Loh (2022) with their "Structural-After-Measurement" (SAM) approach.
 This method essentially follows Burt's (1976) method but adjust the procedure
 to overcome its issues.
 They distinguish two SAM varieties--"local SAM" and "global SAM".
@@ -263,23 +272,24 @@ is employed when bi-factor models are used.
 
 \examples{
 # Create CFA keys
-keys0 <- c("hope_a", "hope_p")
-keys <- sapply(
-  keys0,
-  function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))],
-  simplify = FALSE
+keys <- list(
+  hope_a = paste0("hope_a_", 1:4),
+  hope_p = paste0("hope_p_", 1:4)
 )
 # Create EFA keys
 # Using only 3 factors and fewer items to save time for a simple example
 # (This results in a less than ideal solution but it doesn't matter for an
 # example)
-keys_e0 <- paste0("bfi_", c("e", "a", "c"))
-keys_e <- sapply(
-  keys_e0,
-  function(x) {
-    names(BFIGritHope)[grep(paste0(x, "[1-2]_[1-2]"), names(BFIGritHope))]
-  },
-  simplify = FALSE
+keys_e <- list(
+  bfi_e = c(
+    paste0("bfi_e", c("1_1", "1_2", "2_1", "2_2", "3_1", "3_2"))
+  ),
+  bfi_a = c(
+    paste0("bfi_a", c("1_1", "1_2", "2_1", "2_2", "3_1", "3_2"))
+  ),
+  bfi_c = c(
+    paste0("bfi_c", c("1_1", "1_2", "2_1", "2_2", "3_1", "3_2"))
+  )
 )
 
 # Run 'esem.from.keys' models
@@ -304,7 +314,6 @@ esem_fit <- esem.from.mods(
 summary(esem_fit$fit$grit_c)  # Standard lavaan summary
 esem_fit$r2                   # R-squareds
 esem_fit$b                    # Betas
-
 }
 \references{
 Bainbridge, T. F., Ludeke, S. G., & Smillie, L. D. (2022).

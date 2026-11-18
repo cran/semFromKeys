@@ -163,9 +163,11 @@
 #'
 #' @examples
 #' # Create CFA keys
-#' keys0 <- c("grit_c", "grit_p", "hope_a", "hope_p")
-#' keys <- sapply(
-#'   keys0, function(x) names(BFIGritHope)[grep(x, names(BFIGritHope))]
+#' keys <- list(
+#'   grit_p = paste0("grit_p_", 1:6),
+#'   grit_c = paste0("grit_c_", 1:6),
+#'   hope_a = paste0("hope_a_", 1:4),
+#'   hope_p = paste0("hope_p_", 1:4)
 #' )
 #' # Run CFA models
 #' cfa_fit <- cfa.from.keys(keys, BFIGritHope, check = FALSE, fit_save = FALSE)
@@ -176,7 +178,7 @@
 #'
 #' # Correlations of grit facets with hope facets and the first item from each
 #' # Big Five factor.
-#' items <- names(BFIGritHope)[grep("bfi_.*1_1", names(BFIGritHope))]
+#' items <- c("bfi_e1_1", "bfi_a1_1", "bfi_c1_1", "bfi_n1_1", "bfi_o1_1")
 #' cors2 <- sem.cor(
 #'   BFIGritHope, cfa_fit$fit[1:2], cfa_fit$fit[3:4], items, nagy = FALSE
 #' )
@@ -185,7 +187,8 @@
 
 sem.cor <- function(
     data, fit_y, fit_x = NULL, items = NULL, item_loadings = NULL, nagy = TRUE,
-    fit_save = FALSE, fit_measures = "all", miss = "default", est = "default",
+    fit_save = FALSE, fit_measures = "all", progress = TRUE,
+    miss = "default", est = "default",
     name = "cors", check = FALSE, save_out = FALSE
 ) {
   # Single model instead of list.
@@ -741,6 +744,7 @@ sem.cor <- function(
     data,
     name = name,
     keys_s = key,
+    progress = progress,
     fit_save = fit_save,
     fit_measures = fit_measures,
     miss = miss,
